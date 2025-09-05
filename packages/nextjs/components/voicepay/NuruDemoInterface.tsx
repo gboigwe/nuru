@@ -150,7 +150,7 @@ export const NuruDemoInterface: React.FC = () => {
                 <h2 className="text-2xl font-bold mb-2" style={{color: '#0E7A4B'}}>Processing Payment...</h2>
                 <p className="text-gray-700 text-lg mb-4">Understanding your command</p>
                 <div className="bg-green-50 rounded-xl p-4 mb-4 border border-green-200">
-                  <p className="font-mono text-sm" style={{color: '#12B76A'}}>"{selectedCommand}"</p>
+                  <p className="font-mono text-sm" style={{color: '#12B76A'}}>&quot;{selectedCommand}&quot;</p>
                 </div>
                 <div className="text-xs text-gray-600">ENS resolution → Base L2 → Filecoin receipt</div>
                 <div className="flex justify-center mt-4">
