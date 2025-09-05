@@ -113,7 +113,7 @@ export const NuruDemoInterface: React.FC = () => {
             {currentStep === "demo" && (
               <>
                 <div className="text-6xl mb-4 animate-bounce">🎤</div>
-                <h2 className="text-2xl font-bold mb-3" style={{color: '#0E7A4B'}}>Ready for Demo</h2>
+                <h2 className="text-2xl font-bold mb-3" style={{color: '#0E7A4B'}}>Ready for Try</h2>
                 <p className="text-gray-700 text-lg mb-6">Experience the magic of voice-powered crypto payments</p>
                 <div className="flex items-center justify-center space-x-2" style={{color: '#12B76A'}}>
                   <div className="w-2 h-2 rounded-full animate-ping" style={{backgroundColor: '#12B76A'}}></div>
@@ -167,7 +167,7 @@ export const NuruDemoInterface: React.FC = () => {
               <>
                 <div className="text-6xl mb-4">🎉</div>
                 <h2 className="text-2xl font-bold mb-2" style={{color: '#12B76A'}}>Payment Sent!</h2>
-                <p className="text-gray-700 text-lg">Demo transaction completed successfully</p>
+                <p className="text-gray-700 text-lg">The transaction completed successfully</p>
                 <div className="mt-4 inline-flex items-center space-x-2 bg-green-100 px-4 py-2 rounded-full">
                   <div className="w-2 h-2 rounded-full" style={{backgroundColor: '#12B76A'}}></div>
                   <span className="text-sm font-medium" style={{color: '#12B76A'}}>Transaction Confirmed</span>
@@ -194,7 +194,7 @@ export const NuruDemoInterface: React.FC = () => {
                 <div className="text-3xl animate-pulse">🎤</div>
                 <div>
                   <div className="text-lg">Try Voice Payment</div>
-                  <div className="text-sm text-green-100">Tap to start demo</div>
+                  <div className="text-sm text-green-100">Tap to start try</div>
                 </div>
               </div>
             </button>
@@ -205,7 +205,7 @@ export const NuruDemoInterface: React.FC = () => {
         {/* Recent Demo Payments */}
         {demoPayments.length > 0 && currentStep === "demo" && (
           <div className="bg-white/90 backdrop-blur-lg rounded-2xl shadow-lg p-6 border border-green-200">
-            <h3 className="text-lg font-semibold mb-4" style={{color: '#0E7A4B'}}>Demo Payments</h3>
+            <h3 className="text-lg font-semibold mb-4" style={{color: '#0E7A4B'}}>The Payments</h3>
             <div className="space-y-3">
               {demoPayments.slice(0, 3).map(payment => (
                 <div key={payment.id} className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-100">
