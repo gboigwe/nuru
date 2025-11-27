@@ -139,3 +139,31 @@
 .animate-blob {
   animation: blob 7s infinite;
 }
+
+/* Reown AppKit Custom Styling for Nuru Theme */
+/* Override Reown AppKit variables to match Nuru's green branding */
+appkit-button {
+  --wui-color-accent-100: #12B76A;
+  --wui-color-accent-090: #0E7A4B;
+  --wui-accent-color-100: #12B76A;
+  --w3m-accent: #12B76A;
+  --w3m-color-mix: #0E7A4B;
+  --w3m-color-mix-strength: 50%;
+}
+
+/* Style the connect button */
+appkit-button::part(button) {
+  border-radius: 9999px;
+  font-weight: 600;
+}
+
+/* Network button styling */
+appkit-network-button {
+  --wui-color-accent-100: #12B76A;
+}
+
+/* Modal styling */
+w3m-modal {
+  --w3m-accent: #12B76A;
+  --w3m-background: #ffffff;
+}
