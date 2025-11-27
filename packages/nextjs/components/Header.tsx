@@ -6,7 +6,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { hardhat } from "viem/chains";
 import { Bars3Icon } from "@heroicons/react/24/outline";
-import { FaucetButton, ReownConnectButton } from "~~/components/scaffold-eth";
+import { FaucetButton } from "~~/components/scaffold-eth";
+import { CustomConnectButton, NetworkSwitcher } from "~~/components/WalletConnect";
 import { useOutsideClick, useTargetNetwork } from "~~/hooks/scaffold-eth";
 
 type HeaderMenuLink = {
@@ -89,8 +90,9 @@ export const Header = () => {
           <HeaderMenuLinks />
         </ul>
       </div>
-      <div className="navbar-end grow mr-4">
-        <ReownConnectButton />
+      <div className="navbar-end grow mr-4 gap-2">
+        <NetworkSwitcher />
+        <CustomConnectButton />
         {isLocalNetwork && <FaucetButton />}
       </div>
     </div>
