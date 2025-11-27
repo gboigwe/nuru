@@ -167,3 +167,28 @@ w3m-modal {
   --w3m-accent: #12B76A;
   --w3m-background: #ffffff;
 }
+
+/* Mobile responsive styling for Reown AppKit */
+@media (max-width: 640px) {
+  appkit-button {
+    font-size: 14px;
+  }
+
+  appkit-button::part(button) {
+    padding: 8px 16px;
+  }
+}
+
+/* Ensure modals are mobile-friendly */
+w3m-modal::part(overlay) {
+  backdrop-filter: blur(4px);
+}
+
+/* Improve touch targets on mobile */
+@media (hover: none) and (pointer: coarse) {
+  appkit-button::part(button),
+  appkit-network-button::part(button) {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
