@@ -30,7 +30,16 @@ Nuru transforms the way Africans send money across borders. Instead of complex w
 
 **Nuru's Solution**: *"Send money to mama"* instead of *"Send to 0x742d35Cc6634C0532925a3b8D35Cc6634C0532925"*
 
-## Requirements
+## 🛠️ Tech Stack
+
+- **Frontend**: Next.js 15 (App Router), React, TailwindCSS
+- **Web3**: Wagmi, Viem, Reown AppKit (WalletConnect)
+- **Voice**: OpenAI Whisper + GPT-4 for natural language processing
+- **Storage**: Filecoin for immutable voice receipt storage
+- **Identity**: ENS for human-readable addresses, EFP for social graphs
+- **Network**: Base L2 (Sepolia testnet) + Ethereum Mainnet
+
+## 📋 Requirements
 
 Before you begin, you need to install the following tools:
 
@@ -38,64 +47,145 @@ Before you begin, you need to install the following tools:
 - Yarn ([v1](https://classic.yarnpkg.com/en/docs/install/) or [v2+](https://yarnpkg.com/getting-started/install))
 - [Git](https://git-scm.com/downloads)
 
-## Quickstart
+## 🚀 Quickstart
 
-To get started with Scaffold-ETH 2, follow the steps below:
+### 1. Clone and Install
 
-1. Install the latest version of Scaffold-ETH 2
-
+```bash
+git clone https://github.com/gboigwe/nuru.git
+cd nuru
+yarn install
 ```
-npx create-eth@latest
+
+### 2. Environment Setup
+
+Create a `.env` file in `packages/nextjs/`:
+
+```bash
+# Required: Reown AppKit for wallet connections
+NEXT_PUBLIC_REOWN_PROJECT_ID=your_project_id_here
+
+# Required: Alchemy for RPC
+NEXT_PUBLIC_ALCHEMY_API_KEY=your_alchemy_key_here
+
+# Required for voice features: OpenAI API
+OPENAI_API_KEY=your_openai_key_here
+
+# Optional: Filecoin for voice receipts
+FILECOIN_SERVICE_PRIVATE_KEY=your_filecoin_key_here
 ```
 
-This command will install all the necessary packages and dependencies, so it might take a while.
+**Get your Reown Project ID:**
+1. Visit [cloud.reown.com](https://cloud.reown.com)
+2. Sign in or create an account
+3. Create a new project
+4. Copy your Project ID
 
-> [!NOTE]
-> You can also initialize your project with one of our extensions to add specific features or starter-kits. Learn more in our [extensions documentation](https://docs.scaffoldeth.io/extensions/).
+**Get your Alchemy API Key:**
+1. Visit [alchemy.com](https://www.alchemy.com)
+2. Create a free account
+3. Create a new app (select Base Sepolia network)
+4. Copy your API key
 
-2. Run a local network in the first terminal:
+### 3. Run Local Development
 
-```
+```bash
+# Terminal 1: Start local blockchain (optional for testing)
 yarn chain
-```
 
-This command starts a local Ethereum network that runs on your local machine and can be used for testing and development. Learn how to [customize your network configuration](https://docs.scaffoldeth.io/quick-start/environment#1-initialize-a-local-blockchain).
-
-3. On a second terminal, deploy the test contract:
-
-```
+# Terminal 2: Deploy contracts (optional)
 yarn deploy
-```
 
-This command deploys a test smart contract to the local network. You can find more information about how to customize your contract and deployment script in our [documentation](https://docs.scaffoldeth.io/quick-start/environment#2-deploy-your-smart-contract).
-
-4. On a third terminal, start your NextJS app:
-
-```
+# Terminal 3: Start Next.js app
 yarn start
 ```
 
-Visit your app on: `http://localhost:3000`. You can interact with your smart contract using the `Debug Contracts` page. You can tweak the app config in `packages/nextjs/scaffold.config.ts`.
+Visit your app at `http://localhost:3000`
 
-**What's next**:
+### 4. Using Nuru
 
-Visit the [What's next section of our docs](https://docs.scaffoldeth.io/quick-start/environment#whats-next) to learn how to:
+1. **Connect Wallet**: Click "Connect Wallet" and choose from 300+ supported wallets
+2. **Switch Network**: Select Base Sepolia for testing or Mainnet for ENS
+3. **Voice Payment**: Click the microphone and say "Send 10 USDC to mama.family.eth"
+4. **Confirm**: Review the transaction and approve
 
-- Edit your smart contracts
-- Edit your deployment scripts
-- Customize your frontend
-- Edit the app config
-- Writing and running tests
-- [Setting up external services and API keys](https://docs.scaffoldeth.io/deploying/deploy-smart-contracts#configuration-of-third-party-services-for-production-grade-apps)
+## 🔗 Supported Wallets
 
-## Documentation
+Nuru uses **Reown AppKit** (formerly WalletConnect) which automatically supports:
 
-Visit our [docs](https://docs.scaffoldeth.io) to learn all the technical details and guides of Scaffold-ETH 2.
+- MetaMask
+- Coinbase Wallet
+- Trust Wallet
+- Ledger Live
+- Safe Wallet
+- Rainbow Wallet
+- 300+ WalletConnect-compatible wallets
 
-To know more about its features, check out our [website](https://scaffoldeth.io).
+No manual configuration needed!
 
-## Contributing to Scaffold-ETH 2
+## 📚 Documentation
 
-We welcome contributions to Scaffold-ETH 2!
+- **[Reown Migration Guide](./docs/REOWN_MIGRATION.md)** - Complete guide for the RainbowKit to Reown AppKit migration
+- **[Scaffold-ETH 2 Docs](https://docs.scaffoldeth.io)** - Technical details and guides
+- **[Reown AppKit Docs](https://docs.reown.com/appkit/react/core/installation)** - Wallet connection documentation
 
-Please see [CONTRIBUTING.MD](https://github.com/scaffold-eth/scaffold-eth-2/blob/main/CONTRIBUTING.md) for more information and guidelines for contributing to Scaffold-ETH 2.
+## 🏗️ Project Structure
+
+```
+nuru/
+├── packages/
+│   ├── nextjs/          # Next.js frontend app
+│   │   ├── app/         # Next.js 15 App Router pages
+│   │   ├── components/  # React components
+│   │   ├── hooks/       # Custom React hooks
+│   │   ├── services/    # Web3 configuration & voice processing
+│   │   └── utils/       # Helper functions
+│   └── hardhat/         # Smart contracts & deployment scripts
+├── docs/                # Documentation
+└── voicepay/           # Voice payment core logic
+```
+
+## 🤝 Contributing
+
+We welcome contributions to Nuru! To get started:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (use conventional commits)
+4. Push to your branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 🐛 Troubleshooting
+
+### Wallet Connection Issues
+- Ensure `NEXT_PUBLIC_REOWN_PROJECT_ID` is set in your `.env`
+- Check browser console for errors
+- Try clearing browser cache and reconnecting
+
+### Build Errors
+- Run `yarn clean` and `yarn install` to refresh dependencies
+- Ensure Node version >= 20.18.3
+- Check that all environment variables are set
+
+### Voice Feature Not Working
+- Verify `OPENAI_API_KEY` is set
+- Check microphone permissions in browser
+- Ensure HTTPS connection (required for microphone access)
+
+For more issues, see the [Reown Migration Guide](./docs/REOWN_MIGRATION.md#troubleshooting)
+
+## 📄 License
+
+This project is built on Scaffold-ETH 2 and inherits its MIT License.
+
+## 🙏 Acknowledgments
+
+- Built with [Scaffold-ETH 2](https://scaffoldeth.io)
+- Powered by [Reown AppKit](https://reown.com) (formerly WalletConnect)
+- Voice processing by [OpenAI](https://openai.com)
+- Storage on [Filecoin](https://filecoin.io)
+- Identity via [ENS](https://ens.domains) and [EFP](https://ethfollow.xyz)
+
+---
+
+**Built with ❤️ for Africa at ETH Accra 2024**

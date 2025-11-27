@@ -1,3 +1,18 @@
+/**
+ * Scaffold-ETH App Providers
+ *
+ * This is the root provider component that wraps the entire Next.js app.
+ * Sets up all necessary Web3 and UI providers for the application.
+ *
+ * Provider Stack (outside → inside):
+ * 1. WagmiProvider - Web3 wallet connections via Reown AppKit
+ * 2. QueryClientProvider - React Query for async state management
+ * 3. ScaffoldEthApp - App layout with header/footer
+ *
+ * Previously included RainbowKitProvider, now removed in favor of Reown AppKit.
+ * Reown is initialized in wagmiConfig.tsx and doesn't need a provider wrapper.
+ */
+
 "use client";
 
 import { usePathname } from "next/navigation";
