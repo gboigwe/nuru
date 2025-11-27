@@ -192,3 +192,25 @@ w3m-modal::part(overlay) {
     min-width: 44px;
   }
 }
+
+/* Dark mode support for Reown AppKit */
+[data-theme="dark"] appkit-button,
+[data-theme="dark"] appkit-network-button {
+  --wui-color-accent-100: #12B76A;
+  --wui-color-accent-090: #0E7A4B;
+  --w3m-accent: #12B76A;
+  --w3m-background: #1a1b1f;
+}
+
+/* Accessibility improvements */
+appkit-button:focus-visible,
+appkit-network-button:focus-visible {
+  outline: 2px solid #12B76A;
+  outline-offset: 2px;
+}
+
+/* Loading states */
+appkit-button[data-loading="true"]::part(button) {
+  cursor: wait;
+  opacity: 0.7;
+}
