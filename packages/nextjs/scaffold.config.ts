@@ -37,7 +37,7 @@ const scaffoldConfig = {
   // It's recommended to store it in an env variable:
   // .env.local for local testing, and in the Vercel/system env config for live apps.
   // Use NEXT_PUBLIC_REOWN_PROJECT_ID env var or this fallback
-  walletConnectProjectId: process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID || "3a8170812b534d0ff9d794f19a901d64",
+  walletConnectProjectId: process.env.NEXT_PUBLIC_REOWN_PROJECT_ID || process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID || "",
 
   // Only show the Burner Wallet when running on hardhat network
   onlyLocalBurnerWallet: false,
