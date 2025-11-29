@@ -22,6 +22,7 @@ import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
 import { createAppKit } from "@reown/appkit/react";
 import { Chain, http } from "viem";
 import { mainnet } from "viem/chains";
+import { appMetadata } from "~~/config/metadata";
 import scaffoldConfig, { DEFAULT_ALCHEMY_API_KEY, ScaffoldConfig } from "~~/scaffold.config";
 import { getAlchemyHttpUrl } from "~~/utils/scaffold-eth";
 
@@ -107,10 +108,10 @@ export const wagmiAdapter = new WagmiAdapter({
  * Displayed in wallet connection modals and WalletConnect prompts
  */
 const metadata = {
-  name: "Nuru",
-  description: "Voice-powered crypto remittances for Africa",
-  url: typeof window !== "undefined" ? window.location.origin : "https://nuru.app",
-  icons: [typeof window !== "undefined" ? `${window.location.origin}/logo.png` : "https://nuru.app/logo.png"],
+  name: appMetadata.name,
+  description: appMetadata.description,
+  url: typeof window !== "undefined" ? window.location.origin : appMetadata.url,
+  icons: [typeof window !== "undefined" ? `${window.location.origin}${appMetadata.icon}` : `${appMetadata.url}${appMetadata.icon}`],
 };
 
 /**
