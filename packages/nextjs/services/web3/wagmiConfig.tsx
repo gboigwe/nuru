@@ -6,10 +6,12 @@
  *
  * Key Features:
  * - Automatic wallet support (300+ wallets via WalletConnect Cloud)
+ * - Email & Social Login (Google, Apple, Discord, Farcaster) for easy onboarding
  * - No manual connector configuration needed
  * - Featured wallet prioritization (MetaMask, Trust, Coinbase)
  * - Multi-network support (Base Sepolia + Mainnet for ENS)
  * - Server-side rendering (SSR) compatible
+ * - SIWE (Sign-In with Ethereum) authentication
  *
  * Required Environment Variables:
  * - NEXT_PUBLIC_REOWN_PROJECT_ID: Get from https://cloud.reown.com
@@ -158,6 +160,18 @@ const featuredWalletIds = [
  * This must be called at module initialization (not in a React component).
  * Creates the global AppKit instance that powers <appkit-button /> and other components.
  *
+ * Email & Social Login:
+ * Users can now sign in without installing a wallet using:
+ * - Email: One-time password (OTP) sent to email
+ * - Google: Sign in with Google account
+ * - Apple: Sign in with Apple ID
+ * - Discord: Sign in with Discord account
+ * - Farcaster: Sign in with Farcaster account
+ *
+ * When users connect via email/social, Reown creates a non-custodial wallet for them
+ * that's secured by their authentication method. This significantly improves onboarding
+ * for users new to crypto.
+ *
  * Note: Burner wallet for testing/development requires custom implementation
  * with Reown AppKit. This will be handled separately.
  */
@@ -169,6 +183,9 @@ createAppKit({
   featuredWalletIds,
   features: {
     analytics: false, // Disable analytics for privacy
+    email: true, // Enable email login for easier onboarding
+    socials: ['google', 'apple', 'discord', 'farcaster'], // Enable social login options
+    emailShowWallets: true, // Show wallet options alongside email login
   },
   // Enable SIWE for authentication
   authentication: {
