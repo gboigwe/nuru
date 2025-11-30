@@ -21,7 +21,7 @@
 import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
 import { createAppKit } from "@reown/appkit/react";
 import { Chain, http } from "viem";
-import { mainnet } from "viem/chains";
+import { mainnet, base } from "viem/chains";
 import { SiweMessage } from "siwe";
 import { createSIWEConfig } from "@reown/appkit/siwe";
 import { appMetadata } from "~~/config/metadata";
@@ -173,6 +173,23 @@ createAppKit({
   // Enable SIWE for authentication
   authentication: {
     siweConfig,
+  },
+  // Configure Coinbase Smart Wallet
+  walletConnect: {
+    version: '2',
+    qrModal: true,
+    // Enable Coinbase Smart Wallet specific features
+    coinbase: {
+      // Enable smart wallet features
+      smartWallet: {
+        // Enable sponsored transactions
+        sponsorTransactions: true,
+        // Enable passkeys for better UX
+        enablePasskeys: true,
+        // Set default chain to Base for better UX
+        defaultChain: base.id,
+      },
+    },
   },
 });
 

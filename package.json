@@ -52,6 +52,7 @@
   },
   "packageManager": "yarn@3.2.3",
   "devDependencies": {
+    "@types/node": "^24.10.1",
     "husky": "^9.1.6",
     "lint-staged": "^15.2.10"
   },
@@ -62,10 +63,13 @@
     "@coinbase/onchainkit": "^0.38.19",
     "@ensdomains/ensjs": "^4.0.2",
     "@lighthouse-web3/sdk": "^0.4.1",
+    "@reown/appkit": "^1.8.14",
+    "@reown/appkit-adapter-wagmi": "^1.8.14",
     "@web3-storage/w3up-client": "^17.3.0",
     "axios": "^1.11.0",
     "date-fns": "^4.1.0",
     "openai": "^5.19.1",
-    "viem": "^2.0.0"
+    "siwe": "^3.0.0",
+    "viem": "^2.40.3"
   }
 }
