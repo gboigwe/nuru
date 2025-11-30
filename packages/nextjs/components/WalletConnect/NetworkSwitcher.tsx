@@ -53,7 +53,7 @@ export const NetworkSwitcher = () => {
   }
 
   return (
-    <div className="relative hidden sm:block">
+    <div className="relative">
       <button
         onClick={() => setShowDropdown(!showDropdown)}
         disabled={isPending}
