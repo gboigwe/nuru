@@ -22,6 +22,8 @@ import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
 import { createAppKit } from "@reown/appkit/react";
 import { Chain, http } from "viem";
 import { mainnet } from "viem/chains";
+import { SiweMessage } from "siwe";
+import { createSIWEConfig } from "@reown/appkit/siwe";
 import { appMetadata } from "~~/config/metadata";
 import scaffoldConfig, { DEFAULT_ALCHEMY_API_KEY, ScaffoldConfig } from "~~/scaffold.config";
 import { getAlchemyHttpUrl } from "~~/utils/scaffold-eth";
@@ -96,11 +98,32 @@ const transports = enabledChains.reduce(
  *
  * SSR enabled for Next.js 15 App Router compatibility.
  */
+// SIWE Configuration
+const siweConfig = createSIWEConfig({
+  // The domain of your app (e.g., 'example.com' or 'localhost:3000' for development)
+  domain: typeof window !== 'undefined' ? window.location.host : appMetadata.url.replace(/^https?:\/\//, ''),
+  
+  // The statement that will be shown in the signature request
+  statement: 'Sign in with Ethereum to access your account.',
+  
+  // Additional options
+  options: {
+    // 1 hour expiration
+    expirationTime: 60 * 60 * 1000,
+    // Refresh the session 1 minute before it expires
+    refreshInterval: 60 * 1000,
+  },
+});
+
 export const wagmiAdapter = new WagmiAdapter({
   networks: enabledChains as any,
   projectId,
   ssr: true,
   transports,
+  // Enable SIWE authentication
+  authentication: {
+    siweConfig,
+  },
 });
 
 /**
@@ -146,6 +169,10 @@ createAppKit({
   featuredWalletIds,
   features: {
     analytics: false, // Disable analytics for privacy
+  },
+  // Enable SIWE for authentication
+  authentication: {
+    siweConfig,
   },
 });
 
