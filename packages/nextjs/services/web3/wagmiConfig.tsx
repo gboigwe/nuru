@@ -23,7 +23,7 @@ import { createAppKit } from "@reown/appkit/react";
 import { Chain, http } from "viem";
 import { mainnet, base } from "viem/chains";
 import { SiweMessage } from "siwe";
-import { createSIWEConfig } from "@reown/appkit/siwe";
+import { createSIWEConfig } from "@reown/appkit/siwe/client";
 import { appMetadata } from "~~/config/metadata";
 import scaffoldConfig, { DEFAULT_ALCHEMY_API_KEY, ScaffoldConfig } from "~~/scaffold.config";
 import { getAlchemyHttpUrl } from "~~/utils/scaffold-eth";
