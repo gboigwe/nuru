@@ -1602,7 +1602,7 @@
   resolved "https://registry.npmjs.org/@lit/react/-/react-1.0.8.tgz"
   integrity sha512-p2+YcF+JE67SRX3mMlJ1TKCSTsgyOVdAwd/nxp3NuV1+Cb6MWALbN6nT7Ld4tpmYofcE5kcaSY1YBB9erY+6fw==
 
-"@lit/reactive-element@^2.1.0":
+"@lit/reactive-element@^2.0.0", "@lit/reactive-element@^2.1.0":
   version "2.1.1"
   resolved "https://registry.npmjs.org/@lit/reactive-element/-/reactive-element-2.1.1.tgz"
   integrity sha512-N+dm5PAYdQ8e6UlywyyrgI2t++wFGXfHx+dSJ1oBrg6FAxUj40jId++EaRm80MKX5JnlH1sBsyZ5h0bcZKemCg==
@@ -2480,6 +2480,22 @@
     "@reown/appkit-utils" "1.8.14"
     "@reown/appkit-wallet" "1.8.14"
     lit "3.3.0"
+
+"@reown/appkit-siwe@^1.8.14":
+  version "1.8.14"
+  resolved "https://registry.npmjs.org/@reown/appkit-siwe/-/appkit-siwe-1.8.14.tgz"
+  integrity sha512-9AsgIGICZDDByxIrDF9E0blMA2aVlTQ9Ss+UpZvSG3z8VLAZoqFVrJEWdW+iBF0qD4O8eiPJTsf4g63XfXGaFw==
+  dependencies:
+    "@reown/appkit-common" "1.8.14"
+    "@reown/appkit-controllers" "1.8.14"
+    "@reown/appkit-ui" "1.8.14"
+    "@reown/appkit-utils" "1.8.14"
+    "@reown/appkit-wallet" "1.8.14"
+    "@walletconnect/types" "2.23.0"
+    "@walletconnect/utils" "2.23.0"
+    lit "3.1.0"
+    valtio "2.1.7"
+    viem "2.37.9"
 
 "@reown/appkit-ui@1.7.8":
   version "1.7.8"
@@ -8730,7 +8746,7 @@ listr2@~8.2.4:
     rfdc "^1.4.1"
     wrap-ansi "^9.0.0"
 
-lit-element@^4.2.0:
+lit-element@^4.0.0, lit-element@^4.2.0:
   version "4.2.1"
   resolved "https://registry.npmjs.org/lit-element/-/lit-element-4.2.1.tgz"
   integrity sha512-WGAWRGzirAgyphK2urmYOV72tlvnxw7YfyLDgQ+OZnM9vQQBQnumQ7jUJe6unEzwGU3ahFOjuz1iz1jjrpCPuw==
@@ -8739,7 +8755,7 @@ lit-element@^4.2.0:
     "@lit/reactive-element" "^2.1.0"
     lit-html "^3.3.0"
 
-lit-html@^3.3.0:
+lit-html@^3.1.0, lit-html@^3.3.0:
   version "3.3.1"
   resolved "https://registry.npmjs.org/lit-html/-/lit-html-3.3.1.tgz"
   integrity sha512-S9hbyDu/vs1qNrithiNyeyv64c9yqiW9l+DBgI18fL+MTvOtWoFR0FWiyq1TxaYef5wNlpEmzlXoBlZEO+WjoA==
@@ -8754,6 +8770,15 @@ lit@^3, lit@3.3.0:
     "@lit/reactive-element" "^2.1.0"
     lit-element "^4.2.0"
     lit-html "^3.3.0"
+
+lit@3.1.0:
+  version "3.1.0"
+  resolved "https://registry.npmjs.org/lit/-/lit-3.1.0.tgz"
+  integrity sha512-rzo/hmUqX8zmOdamDAeydfjsGXbbdtAFqMhmocnh2j9aDYqbu0fjXygjCa0T99Od9VQ/2itwaGrjZz/ZELVl7w==
+  dependencies:
+    "@lit/reactive-element" "^2.0.0"
+    lit-element "^4.0.0"
+    lit-html "^3.1.0"
 
 locate-path@^2.0.0:
   version "2.0.0"
@@ -11931,6 +11956,20 @@ viem@2.23.2:
     isows "1.0.6"
     ox "0.6.7"
     ws "8.18.0"
+
+viem@2.37.9:
+  version "2.37.9"
+  resolved "https://registry.npmjs.org/viem/-/viem-2.37.9.tgz"
+  integrity sha512-XXUOE5yJcjr9/M9kRoQcPMUfetwHprO9aTho6vNELjBKJIBx7rYq1fjvBw+xEnhsRjhh5lsORi6B0h8fYFB7NA==
+  dependencies:
+    "@noble/curves" "1.9.1"
+    "@noble/hashes" "1.8.0"
+    "@scure/bip32" "1.7.0"
+    "@scure/bip39" "1.6.0"
+    abitype "1.1.0"
+    isows "1.0.7"
+    ox "0.9.6"
+    ws "8.18.3"
 
 viem@2.7.14:
   version "2.7.14"
