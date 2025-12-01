@@ -3,10 +3,13 @@
 import React, { useEffect, useState } from "react";
 import { formatEther } from "viem";
 import { useAccount, useBalance } from "wagmi";
+import { useTargetNetwork } from "~~/hooks/scaffold-eth/useTargetNetwork";
 
 export const UserBalance: React.FC = () => {
   const { address, isConnected } = useAccount();
   const [showFullBalance, setShowFullBalance] = useState(false);
+
+  const { targetNetwork } = useTargetNetwork();
 
   // Get ETH balance
   const {
@@ -15,12 +18,16 @@ export const UserBalance: React.FC = () => {
     refetch: refetchEth,
   } = useBalance({
     address: address,
+    chainId: targetNetwork.id,
   });
 
-  // Get USDC balance (if available on Base Sepolia)
+  // Get USDC balance (if available on the target network)
   const { data: usdcBalance, isLoading: usdcLoading } = useBalance({
     address: address,
-    token: "0x036CbD53842c5426634e7929541eC2318f3dCF7e", // USDC on Base Sepolia (example)
+    token: targetNetwork.id === 84532 ? 
+      "0x036CbD53842c5426634e7929541eC2318f3dCF7e" : // USDC on Base Sepolia
+      "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",  // USDC on Mainnet
+    chainId: targetNetwork.id,
   });
 
   // Format balance for display
@@ -148,7 +155,7 @@ export const UserBalance: React.FC = () => {
           <div className="mt-4 pt-3 border-t">
             <div className="flex items-center space-x-2">
               <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              <p className="text-xs text-gray-600">Base Sepolia Testnet</p>
+              <p className="text-xs text-gray-600">{targetNetwork.name}</p>
             </div>
           </div>
 

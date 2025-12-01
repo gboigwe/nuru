@@ -6,10 +6,13 @@
  *
  * Key Features:
  * - Automatic wallet support (300+ wallets via WalletConnect Cloud)
+ * - Email & Social Login (Google, Apple, Discord, Farcaster) for easy onboarding
+ * - On-Ramp: Buy crypto directly within the app (essential for remittances)
  * - No manual connector configuration needed
  * - Featured wallet prioritization (MetaMask, Trust, Coinbase)
  * - Multi-network support (Base Sepolia + Mainnet for ENS)
  * - Server-side rendering (SSR) compatible
+ * - SIWE (Sign-In with Ethereum) authentication
  *
  * Required Environment Variables:
  * - NEXT_PUBLIC_REOWN_PROJECT_ID: Get from https://cloud.reown.com
@@ -21,7 +24,7 @@
 import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
 import { createAppKit } from "@reown/appkit/react";
 import { Chain, http } from "viem";
-import { mainnet } from "viem/chains";
+import { mainnet, base } from "viem/chains";
 import { SiweMessage } from "siwe";
 import { createSIWEConfig } from "@reown/appkit/siwe";
 import { appMetadata } from "~~/config/metadata";
@@ -158,6 +161,24 @@ const featuredWalletIds = [
  * This must be called at module initialization (not in a React component).
  * Creates the global AppKit instance that powers <appkit-button /> and other components.
  *
+ * Email & Social Login:
+ * Users can now sign in without installing a wallet using:
+ * - Email: One-time password (OTP) sent to email
+ * - Google: Sign in with Google account
+ * - Apple: Sign in with Apple ID
+ * - Discord: Sign in with Discord account
+ * - Farcaster: Sign in with Farcaster account
+ *
+ * When users connect via email/social, Reown creates a non-custodial wallet for them
+ * that's secured by their authentication method. This significantly improves onboarding
+ * for users new to crypto.
+ *
+ * On-Ramp Feature:
+ * Enabled to allow users to buy crypto directly within the app. This is essential for
+ * remittance applications like Nuru, where users need to purchase cryptocurrency to
+ * send remittances. The on-ramp integrates with various payment providers to enable
+ * seamless fiat-to-crypto conversions.
+ *
  * Note: Burner wallet for testing/development requires custom implementation
  * with Reown AppKit. This will be handled separately.
  */
@@ -169,10 +190,52 @@ createAppKit({
   featuredWalletIds,
   features: {
     analytics: false, // Disable analytics for privacy
+    email: true, // Enable email login for easier onboarding
+    socials: ['google', 'apple', 'discord', 'farcaster'], // Enable social login options
+    emailShowWallets: true, // Show wallet options alongside email login
+    onramp: true, // Enable on-ramp feature for buying crypto directly within the app
   },
   // Enable SIWE for authentication
   authentication: {
     siweConfig,
+  },
+  // Configure Coinbase Smart Wallet
+  walletConnect: {
+    version: '2',
+    qrModal: true,
+    // Enable Coinbase Smart Wallet specific features
+    coinbase: {
+      // Enable smart wallet features
+      smartWallet: {
+        // Enable sponsored transactions
+        sponsorTransactions: true,
+        // Enable passkeys for better UX
+        enablePasskeys: true,
+        // Set default chain to Base for better UX
+        defaultChain: base.id,
+      },
+    },
+  },
+  // Theme configuration to match Nuru brand identity
+  // This replaces CSS overrides in globals.css for a more native integration
+  themeVariables: {
+    // Nuru brand colors - green accent theme
+    '--w3m-accent': '#12B76A', // Primary green accent color
+    '--w3m-color-mix': '#0E7A4B', // Darker green for color mixing
+    '--w3m-color-mix-strength': 50, // 50% color mix strength
+    '--w3m-background': '#ffffff', // Light mode background
+    '--wui-color-accent-100': '#12B76A', // Accent color for UI elements
+    '--wui-color-accent-090': '#0E7A4B', // Darker accent variant
+    
+    // Border radius - fully rounded to match Nuru's design
+    '--w3m-border-radius-master': '9999px', // Fully rounded borders
+    
+    // Font configuration
+    '--w3m-font-family': 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', // System font stack
+    '--w3m-font-size-master': '16px', // Base font size
+    
+    // Dark mode support
+    '--w3m-background-color': '#1a1b1f', // Dark mode background
   },
 });
 
