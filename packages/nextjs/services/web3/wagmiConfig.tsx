@@ -199,9 +199,20 @@ createAppKit({
   features: {
     analytics: false, // Disable analytics for privacy
   },
-  // Enable SIWE for authentication
-  authentication: {
-    siweConfig,
+  // Configure theme variables
+  theme: {
+    // Use CSS variables for theming
+    variables: {
+      '--w3m-font-family': 'Inter, sans-serif',
+      '--w3m-accent-color': '#4F46E5',
+      '--w3m-accent-color-foreground': '#FFFFFF',
+      '--w3m-background-color': '#4F46E5',
+      '--w3m-background-color-muted': '#EEF2FF',
+      '--w3m-text-primary': '#1F2937',
+      '--w3m-text-secondary': '#6B7280',
+      '--w3m-border-radius': '0.5rem',
+      '--w3m-button-border-radius': '0.375rem',
+    },
   },
   // Configure Coinbase Smart Wallet
   walletConnect: {
