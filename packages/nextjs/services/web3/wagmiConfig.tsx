@@ -26,7 +26,13 @@ import { createAppKit } from "@reown/appkit/react";
 import { Chain, http } from "viem";
 import { mainnet, base } from "viem/chains";
 import { SiweMessage } from "siwe";
-import { createSIWEConfig } from "@reown/appkit/siwe";
+import { 
+  type SIWESession, 
+  type SIWEVerifyMessageArgs, 
+  type SIWECreateMessageArgs, 
+  createSIWEConfig, 
+  formatMessage 
+} from "@reown/appkit-siwe";
 import { appMetadata } from "~~/config/metadata";
 import scaffoldConfig, { DEFAULT_ALCHEMY_API_KEY, ScaffoldConfig } from "~~/scaffold.config";
 import { getAlchemyHttpUrl } from "~~/utils/scaffold-eth";
@@ -102,19 +108,44 @@ const transports = enabledChains.reduce(
  * SSR enabled for Next.js 15 App Router compatibility.
  */
 // SIWE Configuration
-const siweConfig = createSIWEConfig({
-  // The domain of your app (e.g., 'example.com' or 'localhost:3000' for development)
-  domain: typeof window !== 'undefined' ? window.location.host : appMetadata.url.replace(/^https?:\/\//, ''),
-  
-  // The statement that will be shown in the signature request
-  statement: 'Sign in with Ethereum to access your account.',
-  
-  // Additional options
-  options: {
-    // 1 hour expiration
-    expirationTime: 60 * 60 * 1000,
-    // Refresh the session 1 minute before it expires
-    refreshInterval: 60 * 1000,
+export const siweConfig = createSIWEConfig({
+  getMessageParams: async () => ({
+    domain: typeof window !== 'undefined' ? window.location.host : appMetadata.url.replace(/^https?:\/\//, ''),
+    uri: typeof window !== 'undefined' ? window.location.origin : appMetadata.url,
+    chains: enabledChains.map(chain => chain.id),
+    statement: 'Sign in with Ethereum to access your account.',
+  }),
+  createMessage: ({ address, ...args }: SIWECreateMessageArgs) => formatMessage(args, address),
+  getNonce: async () => {
+    // TODO: Implement nonce generation from your backend
+    const nonce = Math.random().toString(36).substring(2, 15);
+    if (!nonce) {
+      throw new Error("Failed to generate nonce!");
+    }
+    return nonce;
+  },
+  getSession: async (): Promise<SIWESession | null> => {
+    // TODO: Implement session retrieval from your backend
+    return null;
+  },
+  verifyMessage: async ({ message, signature }: SIWEVerifyMessageArgs) => {
+    // TODO: Implement message verification with your backend
+    try {
+      // Example implementation - replace with your actual verification endpoint
+      const response = await fetch('/api/verify-siwe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message, signature }),
+      });
+      return response.ok;
+    } catch (error) {
+      console.error('Error verifying message:', error);
+      return false;
+    }
+  },
+  signOut: async () => {
+    // TODO: Implement sign out logic
+    return true;
   },
 });
 
@@ -123,10 +154,8 @@ export const wagmiAdapter = new WagmiAdapter({
   projectId,
   ssr: true,
   transports,
-  // Enable SIWE authentication
-  authentication: {
-    siweConfig,
-  },
+  // Configure SIWE for authentication
+  siwe: siweConfig,
 });
 
 /**
@@ -195,9 +224,20 @@ createAppKit({
     emailShowWallets: true, // Show wallet options alongside email login
     onramp: true, // Enable on-ramp feature for buying crypto directly within the app
   },
-  // Enable SIWE for authentication
-  authentication: {
-    siweConfig,
+  // Configure theme variables
+  theme: {
+    // Use CSS variables for theming
+    variables: {
+      '--w3m-font-family': 'Inter, sans-serif',
+      '--w3m-accent-color': '#4F46E5',
+      '--w3m-accent-color-foreground': '#FFFFFF',
+      '--w3m-background-color': '#4F46E5',
+      '--w3m-background-color-muted': '#EEF2FF',
+      '--w3m-text-primary': '#1F2937',
+      '--w3m-text-secondary': '#6B7280',
+      '--w3m-border-radius': '0.5rem',
+      '--w3m-button-border-radius': '0.375rem',
+    },
   },
   // Configure Coinbase Smart Wallet
   walletConnect: {
