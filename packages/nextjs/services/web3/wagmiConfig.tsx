@@ -23,7 +23,7 @@ import { createAppKit } from "@reown/appkit/react";
 import { Chain, http } from "viem";
 import { mainnet, base } from "viem/chains";
 import { SiweMessage } from "siwe";
-import { createSIWEConfig } from "@reown/appkit/siwe/client";
+import { createConfig as createSiweConfig } from "@reown/appkit/siwe/client";
 import { appMetadata } from "~~/config/metadata";
 import scaffoldConfig, { DEFAULT_ALCHEMY_API_KEY, ScaffoldConfig } from "~~/scaffold.config";
 import { getAlchemyHttpUrl } from "~~/utils/scaffold-eth";
@@ -99,7 +99,7 @@ const transports = enabledChains.reduce(
  * SSR enabled for Next.js 15 App Router compatibility.
  */
 // SIWE Configuration
-const siweConfig = createSIWEConfig({
+const siweConfig = createSiweConfig({
   // The domain of your app (e.g., 'example.com' or 'localhost:3000' for development)
   domain: typeof window !== 'undefined' ? window.location.host : appMetadata.url.replace(/^https?:\/\//, ''),
   
