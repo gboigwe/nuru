@@ -36,6 +36,7 @@ import {
 import { appMetadata } from "~~/config/metadata";
 import scaffoldConfig, { DEFAULT_ALCHEMY_API_KEY, ScaffoldConfig } from "~~/scaffold.config";
 import { getAlchemyHttpUrl } from "~~/utils/scaffold-eth";
+import { sessionManager } from "~~/services/session/SessionManager";
 
 const { targetNetworks } = scaffoldConfig;
 
@@ -125,8 +126,8 @@ export const siweConfig = createSIWEConfig({
     return nonce;
   },
   getSession: async (): Promise<SIWESession | null> => {
-    // TODO: Implement session retrieval from your backend
-    return null;
+    // Retrieve session from SessionManager
+    return sessionManager.toSIWESession();
   },
   verifyMessage: async ({ message, signature }: SIWEVerifyMessageArgs) => {
     // TODO: Implement message verification with your backend
@@ -144,7 +145,8 @@ export const siweConfig = createSIWEConfig({
     }
   },
   signOut: async () => {
-    // TODO: Implement sign out logic
+    // Clear session on sign out
+    sessionManager.clearSession();
     return true;
   },
 });
