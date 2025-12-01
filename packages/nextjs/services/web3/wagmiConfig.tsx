@@ -217,27 +217,14 @@ createAppKit({
   projectId,
   metadata,
   featuredWalletIds,
+  // Theme mode: 'light', 'dark', or 'auto' (respects system preference)
+  themeMode: 'auto',
   features: {
     analytics: false, // Disable analytics for privacy
     email: true, // Enable email login for easier onboarding
     socials: ['google', 'apple', 'discord', 'farcaster'], // Enable social login options
     emailShowWallets: true, // Show wallet options alongside email login
     onramp: true, // Enable on-ramp feature for buying crypto directly within the app
-  },
-  // Configure theme variables
-  theme: {
-    // Use CSS variables for theming
-    variables: {
-      '--w3m-font-family': 'Inter, sans-serif',
-      '--w3m-accent-color': '#4F46E5',
-      '--w3m-accent-color-foreground': '#FFFFFF',
-      '--w3m-background-color': '#4F46E5',
-      '--w3m-background-color-muted': '#EEF2FF',
-      '--w3m-text-primary': '#1F2937',
-      '--w3m-text-secondary': '#6B7280',
-      '--w3m-border-radius': '0.5rem',
-      '--w3m-button-border-radius': '0.375rem',
-    },
   },
   // Configure Coinbase Smart Wallet
   walletConnect: {
@@ -256,26 +243,43 @@ createAppKit({
       },
     },
   },
-  // Theme configuration to match Nuru brand identity
-  // This replaces CSS overrides in globals.css for a more native integration
+  /**
+   * Theme Configuration - Nuru Brand Identity
+   *
+   * Native theming using Reown AppKit's themeVariables API.
+   * This replaces CSS overrides for a cleaner, more maintainable approach.
+   *
+   * Nuru Brand Colors:
+   * - Primary Green: #12B76A (success, primary actions, wallet connect buttons)
+   * - Dark Green: #0E7A4B (hover states, color mixing for depth)
+   *
+   * Design Philosophy:
+   * - Rounded borders (24px master) for modern, friendly look
+   * - System font stack for optimal performance and native feel
+   * - High contrast for accessibility
+   * - Color mixing for consistent theming across light/dark modes
+   *
+   * @see https://docs.reown.com/appkit/react/core/theming
+   */
   themeVariables: {
-    // Nuru brand colors - green accent theme
-    '--w3m-accent': '#12B76A', // Primary green accent color
-    '--w3m-color-mix': '#0E7A4B', // Darker green for color mixing
-    '--w3m-color-mix-strength': 50, // 50% color mix strength
-    '--w3m-background': '#ffffff', // Light mode background
-    '--wui-color-accent-100': '#12B76A', // Accent color for UI elements
-    '--wui-color-accent-090': '#0E7A4B', // Darker accent variant
-    
-    // Border radius - fully rounded to match Nuru's design
-    '--w3m-border-radius-master': '9999px', // Fully rounded borders
-    
+    // Primary accent color for buttons, links, and interactive elements
+    '--apkt-accent': '#12B76A',
+
+    // Color that blends with default colors for cohesive theming
+    '--apkt-color-mix': '#0E7A4B',
+
+    // Percentage of color-mix blending (0-100). Higher = more brand color influence
+    '--apkt-color-mix-strength': 40,
+
     // Font configuration
-    '--w3m-font-family': 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', // System font stack
-    '--w3m-font-size-master': '16px', // Base font size
-    
-    // Dark mode support
-    '--w3m-background-color': '#1a1b1f', // Dark mode background
+    '--apkt-font-family': 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+    '--apkt-font-size-master': '16px',
+
+    // Border radius (24px for modern rounded look, not fully rounded to maintain readability)
+    '--apkt-border-radius-master': '24px',
+
+    // Z-index for modal layering (ensure it appears above all content)
+    '--apkt-z-index': 9999,
   },
 });
 
