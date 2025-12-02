@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import Image from "next/image";
 import { useAccount, useConnect, useDisconnect } from "wagmi";
 import { XMarkIcon, ArrowTopRightOnSquareIcon, DevicePhoneMobileIcon, QrCodeIcon } from "@heroicons/react/24/outline";
-import { useMobileWalletDetection, openDeepLink } from "@/hooks/useMobileWalletDetection";
+import { useMobileWalletDetection, openDeepLink } from '../../hooks/useMobileWalletDetection';
 
 /**
  * Custom Wallet Connect Modal for Nuru
@@ -32,8 +32,8 @@ interface WalletOption {
   isMobilePreferred?: boolean;
 }
 
-// Base wallet options configuration
-const BASE_WALLET_OPTIONS: Omit<WalletOption, 'isInstalled' | 'deepLink' | 'isMobilePreferred'>[] = [
+// Base wallet options configuration without the computed properties
+const BASE_WALLET_OPTIONS: Omit<WalletOption, 'isInstalled' | 'deepLink'>[] = [
   {
     id: "metamask",
     name: "MetaMask",
