@@ -1,7 +1,7 @@
 import React from 'react';
 import { TransactionRecord, TransactionStatus } from '../../services/transactions/types';
 import { formatEther } from 'viem';
-import { useEnsName } from 'wagmi';
+import { useEnsName, useAccount } from 'wagmi';
 import { shortenAddress } from '../../utils/address';
 import { FiExternalLink, FiCheckCircle, FiClock, FiXCircle } from 'react-icons/fi';
 import Link from 'next/link';
@@ -60,14 +60,14 @@ const TransactionItem: React.FC<{
   tx: TransactionRecord; 
   isCurrentUserSender: boolean;
   onClick?: () => void;
-}> = ({ tx, isCurrentUser, onClick }) => {
+}> = ({ tx, isCurrentUserSender, onClick }) => {
   const { data: ensName } = useEnsName({ 
-    address: isCurrentUser ? tx.to : tx.from,
+    address: isCurrentUserSender ? tx.to : tx.from,
     chainId: tx.networkId,
   });
 
-  const displayAddress = ensName || (isCurrentUser ? tx.to : tx.from);
-  const action = isCurrentUser ? 'Sent' : 'Received';
+  const displayAddress = ensName || (isCurrentUserSender ? tx.to : tx.from);
+  const action = isCurrentUserSender ? 'Sent' : 'Received';
   const amount = formatEther(tx.amount);
   const timestamp = new Date(tx.timestamp).toLocaleString();
   const explorerUrl = getBlockExplorerUrl(tx.hash, tx.networkId);
@@ -143,7 +143,7 @@ export const TransactionList: React.FC<TransactionListProps> = ({
           <TransactionItem
             key={tx.hash}
             tx={tx}
-            isCurrentUser={tx.from.toLowerCase() === address?.toLowerCase()}
+            isCurrentUserSender={tx.from.toLowerCase() === address?.toLowerCase()}
             onClick={() => onTransactionClick?.(tx)}
           />
         ))}

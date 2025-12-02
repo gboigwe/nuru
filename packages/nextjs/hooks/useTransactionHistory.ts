@@ -10,6 +10,7 @@ export function useTransactionHistory() {
   const [error, setError] = useState<Error | null>(null);
   const [filters, setFilters] = useState<{
     status?: TransactionStatus;
+    search?: string;
     limit: number;
     offset: number;
     hasMore: boolean;
