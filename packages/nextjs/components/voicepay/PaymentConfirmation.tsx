@@ -1,7 +1,10 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { useAccount } from "wagmi";
 import { ProcessedVoiceCommand } from "../../services/VoicePayService";
+import { useBalanceCheck } from "~~/hooks/scaffold-eth/useBalanceCheck";
+import { InsufficientBalancePrompt } from "~~/components/scaffold-eth/InsufficientBalancePrompt";
 
 interface PaymentConfirmationProps {
   processedCommand: ProcessedVoiceCommand;
@@ -17,6 +20,36 @@ export const PaymentConfirmation: React.FC<PaymentConfirmationProps> = ({
   isExecuting,
 }) => {
   const { intent, ensResolution } = processedCommand;
+  const { address } = useAccount();
+  const [showInsufficientBalance, setShowInsufficientBalance] = useState(false);
+
+  // Check balance before payment
+  const balanceCheck = useBalanceCheck({
+    to: ensResolution?.address || undefined,
+    amount: intent.amount,
+  });
+
+  // Show insufficient balance prompt if needed
+  useEffect(() => {
+    if (!balanceCheck.hasBalance && ensResolution?.isValid) {
+      setShowInsufficientBalance(true);
+    }
+  }, [balanceCheck.hasBalance, ensResolution]);
+
+  const handleConfirmPayment = () => {
+    // Check balance before confirming
+    if (!balanceCheck.hasBalance) {
+      setShowInsufficientBalance(true);
+      return;
+    }
+    onConfirm();
+  };
+
+  const handleBalanceSufficient = () => {
+    setShowInsufficientBalance(false);
+    // Auto-retry payment
+    onConfirm();
+  };
 
   // Format amount for display
   const formatAmount = (amount: string, currency: string): string => {
@@ -112,15 +145,27 @@ export const PaymentConfirmation: React.FC<PaymentConfirmationProps> = ({
               <div className="flex items-start space-x-3">
                 <div className="text-lg mt-0.5">🎤</div>
                 <div className="flex-1">
-                  <p className="text-purple-800 italic">"{intent.metadata.originalCommand || "Voice command processed"}"</p>
+                  <p className="text-purple-800 italic">&quot;{intent.rawTranscript || "Voice command processed"}&quot;</p>
                   <div className="flex items-center justify-between mt-2">
-                    <p className="text-xs text-purple-600">Action: {intent.metadata.action.toUpperCase()}</p>
-                    <p className="text-xs text-purple-600">Confidence: {Math.round((intent.metadata.confidence || 0) * 100)}%</p>
+                    <p className="text-xs text-purple-600">Action: {intent.action.toUpperCase()}</p>
+                    <p className="text-xs text-purple-600">Confidence: {Math.round((intent.confidence || 0) * 100)}%</p>
                   </div>
                 </div>
               </div>
             </div>
           </div>
+
+          {/* Insufficient Balance Warning */}
+          {showInsufficientBalance && (
+            <InsufficientBalancePrompt
+              currentBalance={balanceCheck.balance}
+              requiredAmount={balanceCheck.required}
+              shortfall={balanceCheck.shortfall}
+              userAddress={address}
+              onBalanceSufficient={handleBalanceSufficient}
+              onDismiss={() => setShowInsufficientBalance(false)}
+            />
+          )}
 
           {/* Network Info */}
           <div className="bg-orange-50 rounded-lg p-4">
@@ -154,10 +199,10 @@ export const PaymentConfirmation: React.FC<PaymentConfirmationProps> = ({
           {ensResolution?.isValid ? (
             <>
               <button
-                onClick={onConfirm}
-                disabled={isExecuting}
+                onClick={handleConfirmPayment}
+                disabled={isExecuting || !balanceCheck.hasBalance}
                 className={`w-full py-4 px-6 rounded-xl font-semibold text-white transition-colors ${
-                  isExecuting
+                  isExecuting || !balanceCheck.hasBalance
                     ? "bg-gray-400 cursor-not-allowed"
                     : "bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 active:scale-98"
                 }`}
@@ -167,6 +212,8 @@ export const PaymentConfirmation: React.FC<PaymentConfirmationProps> = ({
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                     <span>Processing Payment...</span>
                   </div>
+                ) : !balanceCheck.hasBalance ? (
+                  "Insufficient Balance - Add Funds Above"
                 ) : (
                   `✓ Confirm & Send ${formatAmount(intent.amount, intent.currency)}`
                 )}
