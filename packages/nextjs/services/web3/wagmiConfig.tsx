@@ -118,22 +118,37 @@ export const siweConfig = createSIWEConfig({
   }),
   createMessage: ({ address, ...args }: SIWECreateMessageArgs) => formatMessage(args, address),
   getNonce: async () => {
-    // TODO: Implement nonce generation from your backend
-    const nonce = Math.random().toString(36).substring(2, 15);
-    if (!nonce) {
-      throw new Error("Failed to generate nonce!");
+    // Fetch cryptographically secure nonce from backend
+    try {
+      const response = await fetch('/api/siwe/nonce');
+      if (!response.ok) {
+        throw new Error("Failed to fetch nonce");
+      }
+      const { nonce } = await response.json();
+      return nonce;
+    } catch (error) {
+      console.error("Error fetching nonce:", error);
+      throw new Error("Failed to generate nonce");
     }
-    return nonce;
   },
   getSession: async (): Promise<SIWESession | null> => {
-    // Retrieve session from SessionManager
-    return sessionManager.toSIWESession();
+    // Fetch session from backend
+    try {
+      const response = await fetch('/api/siwe/session');
+      if (!response.ok) {
+        return null;
+      }
+      const { session } = await response.json();
+      return session;
+    } catch (error) {
+      console.error("Error fetching session:", error);
+      return null;
+    }
   },
   verifyMessage: async ({ message, signature }: SIWEVerifyMessageArgs) => {
-    // TODO: Implement message verification with your backend
+    // Verify SIWE message signature with backend
     try {
-      // Example implementation - replace with your actual verification endpoint
-      const response = await fetch('/api/verify-siwe', {
+      const response = await fetch('/api/siwe/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message, signature }),
@@ -145,9 +160,15 @@ export const siweConfig = createSIWEConfig({
     }
   },
   signOut: async () => {
-    // Clear session on sign out
-    sessionManager.clearSession();
-    return true;
+    // Clear session on backend and client
+    try {
+      await fetch('/api/siwe/signout', { method: 'POST' });
+      sessionManager.clearSession();
+      return true;
+    } catch (error) {
+      console.error('Error signing out:', error);
+      return false;
+    }
   },
 });
 
