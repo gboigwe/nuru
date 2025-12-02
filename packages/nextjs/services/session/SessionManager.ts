@@ -28,6 +28,12 @@ export interface SessionData {
   expiresAt: number;
   sessionToken: string;
   rememberMe: boolean;
+  onboardingCompleted?: boolean;
+  onboardingStep?: number;
+  profile?: {
+    displayName?: string;
+    avatar?: string;
+  };
 }
 
 export class SessionManager {
