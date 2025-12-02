@@ -9,6 +9,7 @@
  * - Multiple size variants (sm, md, lg)
  * - Mobile-optimized touch targets
  * - Nuru brand styling
+ * - Fully typed with AppKitView for compile-time safety
  *
  * @see https://docs.reown.com/appkit/features/onramp
  */
@@ -16,6 +17,7 @@
 "use client";
 
 import { useAppKit } from "@reown/appkit/react";
+import type { AppKitView } from "~~/types/appkit";
 
 interface OnRampButtonProps {
   size?: "sm" | "md" | "lg";
@@ -28,8 +30,9 @@ export const OnRampButton = ({ size = "md", variant = "primary", fullWidth = fal
   const { open } = useAppKit();
 
   const handleOpenOnRamp = () => {
-    // Open Reown AppKit modal to the On-Ramp view
-    open({ view: "OnRampProviders" });
+    // Open Reown AppKit modal to the On-Ramp view with type-safe view name
+    const view: AppKitView = "OnRampProviders";
+    open({ view });
   };
 
   const sizeClasses = {
