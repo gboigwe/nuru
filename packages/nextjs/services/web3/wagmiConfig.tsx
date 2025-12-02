@@ -25,13 +25,12 @@ import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
 import { createAppKit } from "@reown/appkit/react";
 import { Chain, http } from "viem";
 import { mainnet, base } from "viem/chains";
-import { SiweMessage } from "siwe";
-import { 
-  type SIWESession, 
-  type SIWEVerifyMessageArgs, 
-  type SIWECreateMessageArgs, 
-  createSIWEConfig, 
-  formatMessage 
+import {
+  type SIWESession,
+  type SIWEVerifyMessageArgs,
+  type SIWECreateMessageArgs,
+  createSIWEConfig,
+  formatMessage
 } from "@reown/appkit-siwe";
 import { appMetadata } from "~~/config/metadata";
 import scaffoldConfig, { DEFAULT_ALCHEMY_API_KEY, ScaffoldConfig } from "~~/scaffold.config";
@@ -77,9 +76,6 @@ const projectId = process.env.NEXT_PUBLIC_REOWN_PROJECT_ID || scaffoldConfig.wal
 const transports = enabledChains.reduce(
   (acc, chain) => {
     const rpcOverrideUrl = (scaffoldConfig.rpcOverrides as ScaffoldConfig["rpcOverrides"])?.[chain.id];
-
-    // Configure polling interval for each chain
-    const pollingInterval = scaffoldConfig.pollingInterval;
 
     if (rpcOverrideUrl) {
       acc[chain.id] = http(rpcOverrideUrl, { timeout: 30_000 });
@@ -177,8 +173,6 @@ export const wagmiAdapter = new WagmiAdapter({
   projectId,
   ssr: true,
   transports,
-  // Configure SIWE for authentication
-  siwe: siweConfig,
 });
 
 /**
@@ -240,31 +234,12 @@ createAppKit({
   projectId,
   metadata,
   featuredWalletIds,
-  // Theme mode: 'light', 'dark', or 'auto' (respects system preference)
-  themeMode: 'auto',
   features: {
     analytics: false, // Disable analytics for privacy
     email: true, // Enable email login for easier onboarding
     socials: ['google', 'apple', 'discord', 'farcaster'], // Enable social login options
     emailShowWallets: true, // Show wallet options alongside email login
     onramp: true, // Enable on-ramp feature for buying crypto directly within the app
-  },
-  // Configure Coinbase Smart Wallet
-  walletConnect: {
-    version: '2',
-    qrModal: true,
-    // Enable Coinbase Smart Wallet specific features
-    coinbase: {
-      // Enable smart wallet features
-      smartWallet: {
-        // Enable sponsored transactions
-        sponsorTransactions: true,
-        // Enable passkeys for better UX
-        enablePasskeys: true,
-        // Set default chain to Base for better UX
-        defaultChain: base.id,
-      },
-    },
   },
   /**
    * Theme Configuration - Nuru Brand Identity

@@ -65,6 +65,7 @@
     "@lighthouse-web3/sdk": "^0.4.1",
     "@reown/appkit": "^1.8.14",
     "@reown/appkit-adapter-wagmi": "^1.8.14",
+    "@reown/appkit-siwe": "^1.8.14",
     "@web3-storage/w3up-client": "^17.3.0",
     "axios": "^1.11.0",
     "date-fns": "^4.1.0",
