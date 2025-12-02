@@ -1,11 +1,12 @@
 import { Hash, SendTransactionParameters, TransactionReceipt, WalletClient } from "viem";
-import { Config, useWalletClient } from "wagmi";
+import { Config, useAccount, useWalletClient } from "wagmi";
 import { getPublicClient } from "wagmi/actions";
 import { SendTransactionMutate } from "wagmi/query";
 import scaffoldConfig from "~~/scaffold.config";
 import { wagmiConfig } from "~~/services/web3/wagmiConfig";
 import { AllowedChainIds, getBlockExplorerTxLink, notification } from "~~/utils/scaffold-eth";
 import { TransactorFuncOptions, getParsedErrorWithAllAbis } from "~~/utils/scaffold-eth/contract";
+import { useTargetNetwork } from "./useTargetNetwork";
 
 type TransactionFunc = (
   tx: (() => Promise<Hash>) | Parameters<SendTransactionMutate<Config, undefined>>[0],
@@ -36,6 +37,9 @@ const TxnNotification = ({ message, blockExplorerLink }: { message: string; bloc
 export const useTransactor = (_walletClient?: WalletClient): TransactionFunc => {
   let walletClient = _walletClient;
   const { data } = useWalletClient();
+  const { chain } = useAccount();
+  const { targetNetwork } = useTargetNetwork();
+
   if (walletClient === undefined && data) {
     walletClient = data;
   }
@@ -44,6 +48,15 @@ export const useTransactor = (_walletClient?: WalletClient): TransactionFunc => 
     if (!walletClient) {
       notification.error("Cannot access account");
       console.error("⚡️ ~ file: useTransactor.tsx ~ error");
+      return;
+    }
+
+    // Validate chain matches target network before executing transaction
+    if (chain && targetNetwork && chain.id !== targetNetwork.id) {
+      notification.error(
+        `Wrong network! Please switch to ${targetNetwork.name} in your wallet before sending transactions.`
+      );
+      console.error(`Chain mismatch: wallet is on ${chain.name} but app expects ${targetNetwork.name}`);
       return;
     }
 
