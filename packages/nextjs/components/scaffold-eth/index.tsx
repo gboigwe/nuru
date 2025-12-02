@@ -17,3 +17,4 @@ export * from "./SessionStatus";
 export * from "./OnRampButton";
 export * from "./LowBalancePrompt";
 export * from "./ConnectionError";
+export * from "./ChainMismatchWarning";
