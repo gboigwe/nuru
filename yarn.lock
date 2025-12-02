@@ -3044,7 +3044,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@lit/reactive-element@npm:^2.1.0":
+"@lit/reactive-element@npm:^2.0.0, @lit/reactive-element@npm:^2.1.0":
   version: 2.1.1
   resolution: "@lit/reactive-element@npm:2.1.1"
   dependencies:
@@ -4546,6 +4546,24 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@reown/appkit-siwe@npm:^1.8.14":
+  version: 1.8.14
+  resolution: "@reown/appkit-siwe@npm:1.8.14"
+  dependencies:
+    "@reown/appkit-common": 1.8.14
+    "@reown/appkit-controllers": 1.8.14
+    "@reown/appkit-ui": 1.8.14
+    "@reown/appkit-utils": 1.8.14
+    "@reown/appkit-wallet": 1.8.14
+    "@walletconnect/types": 2.23.0
+    "@walletconnect/utils": 2.23.0
+    lit: 3.1.0
+    valtio: 2.1.7
+    viem: 2.37.9
+  checksum: 7ded349fb7f5b0c74201ae45dbde4896fc6f5fa110d1e5259cc384c5a102047eec58ebb8c139f3a956a0b72c615600a5ecf4acfab596491fb14977de9e8097b2
+  languageName: node
+  linkType: hard
+
 "@reown/appkit-ui@npm:1.7.8":
   version: 1.7.8
   resolution: "@reown/appkit-ui@npm:1.7.8"
@@ -4895,6 +4913,7 @@ __metadata:
     "@heroicons/react": ^2.1.5
     "@reown/appkit": ^1.6.0
     "@reown/appkit-adapter-wagmi": ^1.6.0
+    "@reown/appkit-siwe": ^1.8.14
     "@tailwindcss/postcss": latest
     "@tanstack/react-query": ^5.59.15
     "@trivago/prettier-plugin-sort-imports": ^4.3.0
@@ -15258,7 +15277,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lit-element@npm:^4.2.0":
+"lit-element@npm:^4.0.0, lit-element@npm:^4.2.0":
   version: 4.2.1
   resolution: "lit-element@npm:4.2.1"
   dependencies:
@@ -15269,12 +15288,23 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lit-html@npm:^3.3.0":
+"lit-html@npm:^3.1.0, lit-html@npm:^3.3.0":
   version: 3.3.1
   resolution: "lit-html@npm:3.3.1"
   dependencies:
     "@types/trusted-types": ^2.0.2
   checksum: de07c669453381edc69a03cccd8019ef4ddc5e94a8c5ac215f933812cbcf77a17ee909b8db22df1ef56a7eb171883ca5c4ab8cfc06d9921ea6620dbfe4fd1896
+  languageName: node
+  linkType: hard
+
+"lit@npm:3.1.0":
+  version: 3.1.0
+  resolution: "lit@npm:3.1.0"
+  dependencies:
+    "@lit/reactive-element": ^2.0.0
+    lit-element: ^4.0.0
+    lit-html: ^3.1.0
+  checksum: 4202f41394707d0d83466c3f1b355f21dbe21fe17f042bb3a98108d79483a4bc5515c2e9c93b4a1665bf8fd1e01e94eeab7635fbed387c1a055a94f3689a9338
   languageName: node
   linkType: hard
 
@@ -18758,6 +18788,7 @@ __metadata:
     "@lighthouse-web3/sdk": ^0.4.1
     "@reown/appkit": ^1.8.14
     "@reown/appkit-adapter-wagmi": ^1.8.14
+    "@reown/appkit-siwe": ^1.8.14
     "@types/node": ^24.10.1
     "@web3-storage/w3up-client": ^17.3.0
     axios: ^1.11.0
@@ -21175,6 +21206,27 @@ __metadata:
     typescript:
       optional: true
   checksum: a63127f8f206246be15ff19584e6f9c9203a7ad126df65a3965419d768156e2b5aa571a08f49a3de306a0a6b3632d5725a1600ab007421db2c041f2cb8b2318e
+  languageName: node
+  linkType: hard
+
+"viem@npm:2.37.9":
+  version: 2.37.9
+  resolution: "viem@npm:2.37.9"
+  dependencies:
+    "@noble/curves": 1.9.1
+    "@noble/hashes": 1.8.0
+    "@scure/bip32": 1.7.0
+    "@scure/bip39": 1.6.0
+    abitype: 1.1.0
+    isows: 1.0.7
+    ox: 0.9.6
+    ws: 8.18.3
+  peerDependencies:
+    typescript: ">=5.0.4"
+  peerDependenciesMeta:
+    typescript:
+      optional: true
+  checksum: 4c7ba35a556a36a1a25a7af0bfbb5f2f499b67fa37ccc25e397eee78bd9766b1261d551be7d2687bc917ac167ca55a970ade20486cf9cc215754572f83240a28
   languageName: node
   linkType: hard
 

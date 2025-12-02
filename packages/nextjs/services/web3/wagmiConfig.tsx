@@ -25,13 +25,12 @@ import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
 import { createAppKit } from "@reown/appkit/react";
 import { Chain, http } from "viem";
 import { mainnet, base } from "viem/chains";
-import { SiweMessage } from "siwe";
-import { 
-  type SIWESession, 
-  type SIWEVerifyMessageArgs, 
-  type SIWECreateMessageArgs, 
-  createSIWEConfig, 
-  formatMessage 
+import {
+  type SIWESession,
+  type SIWEVerifyMessageArgs,
+  type SIWECreateMessageArgs,
+  createSIWEConfig,
+  formatMessage
 } from "@reown/appkit-siwe";
 import { appMetadata } from "~~/config/metadata";
 import scaffoldConfig, { DEFAULT_ALCHEMY_API_KEY, ScaffoldConfig } from "~~/scaffold.config";
@@ -177,8 +176,6 @@ export const wagmiAdapter = new WagmiAdapter({
   projectId,
   ssr: true,
   transports,
-  // Configure SIWE for authentication
-  siwe: siweConfig,
 });
 
 /**
@@ -240,8 +237,6 @@ createAppKit({
   projectId,
   metadata,
   featuredWalletIds,
-  // Theme mode: 'light', 'dark', or 'auto' (respects system preference)
-  themeMode: 'auto',
   features: {
     analytics: false, // Disable analytics for privacy
     email: true, // Enable email login for easier onboarding

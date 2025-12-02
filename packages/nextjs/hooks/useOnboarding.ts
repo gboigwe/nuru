@@ -28,7 +28,7 @@ export function useOnboarding() {
       // Check if onboarding is already completed
       const hasCompletedOnboarding = session?.onboardingCompleted === true;
 
-      setShouldShowOnboarding(isEmailSocialUser && !hasCompletedOnboarding);
+      setShouldShowOnboarding(Boolean(isEmailSocialUser && !hasCompletedOnboarding));
       setIsCheckingSession(false);
     };
 

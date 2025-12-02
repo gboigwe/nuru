@@ -1,13 +1,9 @@
-"use client";
-
 import { ScaffoldEthAppWithProviders } from "~~/components/ScaffoldEthAppWithProviders";
 import { ThemeProvider } from "~~/components/ThemeProvider";
-import { EmailLoginWelcomeFlow } from "~~/components/onboarding";
-import { useOnboarding } from "~~/hooks/useOnboarding";
+import { OnboardingWrapper } from "~~/components/onboarding/OnboardingWrapper";
 import "~~/styles/globals.css";
 import { getMetadata } from "~~/utils/scaffold-eth/getMetadata";
 
-// This is a workaround for the 'use client' directive with metadata
 export const metadata = getMetadata({
   title: "Nuru - Light up your payments",
   description: "Voice-powered crypto remittances for Africa. Built with ✨ at ETH Accra 2024",
@@ -16,7 +12,6 @@ export const metadata = getMetadata({
 });
 
 const ScaffoldEthApp = ({ children }: { children: React.ReactNode }) => {
-  const { shouldShowOnboarding, isCheckingSession, handleOnboardingComplete } = useOnboarding();
 
   return (
     <html suppressHydrationWarning>
@@ -24,9 +19,7 @@ const ScaffoldEthApp = ({ children }: { children: React.ReactNode }) => {
         <ThemeProvider enableSystem>
           <ScaffoldEthAppWithProviders>
             {children}
-            {!isCheckingSession && shouldShowOnboarding && (
-              <EmailLoginWelcomeFlow onComplete={handleOnboardingComplete} />
-            )}
+            <OnboardingWrapper />
           </ScaffoldEthAppWithProviders>
         </ThemeProvider>
       </body>
