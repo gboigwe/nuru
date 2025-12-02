@@ -1,14 +1,16 @@
 import { useEffect } from "react";
 import { useAccount, useConnect } from "wagmi";
-import { hardhat } from "viem/chains";
+import { useTargetNetwork } from "./useTargetNetwork";
 
 /**
  * This hook handles auto-connection to the last used wallet if available.
  * It's used to maintain wallet connection state across page refreshes.
+ * Now uses the target network from scaffold.config.ts instead of hardcoded hardhat.
  */
 export const useAutoConnect = (): void => {
   const { connect, connectors } = useConnect();
   const { isConnected } = useAccount();
+  const { targetNetwork } = useTargetNetwork();
 
   useEffect(() => {
     // Skip if already connected or in a non-browser environment
@@ -24,9 +26,10 @@ export const useAutoConnect = (): void => {
 
     const connector = connectors.find((c) => c.id === lastUsedConnector);
     if (connector) {
-      connect({ connector, chainId: hardhat.id });
+      // Use target network from config instead of hardcoded hardhat
+      connect({ connector, chainId: targetNetwork.id });
     }
-  }, [connect, connectors, isConnected]);
+  }, [connect, connectors, isConnected, targetNetwork]);
 };
 
 export default useAutoConnect;

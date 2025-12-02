@@ -2,9 +2,10 @@
 
 import { useEffect, useState, useMemo } from "react";
 import Image from "next/image";
-import { useAccount, useConnect, useDisconnect } from "wagmi";
-import { XMarkIcon, ArrowTopRightOnSquareIcon, DevicePhoneMobileIcon, QrCodeIcon } from "@heroicons/react/24/outline";
-import { useMobileWalletDetection, openDeepLink } from '../../hooks/useMobileWalletDetection';
+import { useAccount, useDisconnect } from "wagmi";
+import { XMarkIcon } from "@heroicons/react/24/outline";
+import { useWalletConnection } from "~~/hooks/scaffold-eth/useWalletConnection";
+import { ConnectionError } from "~~/components/scaffold-eth/ConnectionError";
 
 /**
  * Custom Wallet Connect Modal for Nuru
@@ -83,36 +84,8 @@ export const WalletConnectModal = () => {
   const [selectedWallet, setSelectedWallet] = useState<WalletOption | null>(null);
   
   const { address, isConnected } = useAccount();
-  const { connect, connectors, isPending } = useConnect();
   const { disconnect } = useDisconnect();
-  
-  // Get mobile wallet detection state
-  const { isMobile, installedWallets, getDeepLink } = useMobileWalletDetection();
-  
-  // Generate wallet options with mobile detection
-  const walletOptions = useMemo<WalletOption[]>(() => {
-    return BASE_WALLET_OPTIONS.map(wallet => ({
-      ...wallet,
-      isInstalled: installedWallets[wallet.id as keyof typeof installedWallets]?.installed || false,
-      deepLink: getDeepLink(wallet.id as keyof typeof installedWallets),
-    }));
-  }, [installedWallets, getDeepLink]);
-  
-  // Filter and sort wallets - show installed wallets first, then mobile-preferred, then others
-  const sortedWalletOptions = useMemo(() => {
-    return [...walletOptions].sort((a, b) => {
-      // Installed wallets first
-      if (a.isInstalled && !b.isInstalled) return -1;
-      if (!a.isInstalled && b.isInstalled) return 1;
-      
-      // Mobile-preferred wallets next
-      if (a.isMobilePreferred && !b.isMobilePreferred) return -1;
-      if (!a.isMobilePreferred && b.isMobilePreferred) return 1;
-      
-      // Then sort by name
-      return a.name.localeCompare(b.name);
-    });
-  }, [walletOptions]);
+  const { connectWallet, retry, clearError, error, isConnecting, connectingWallet } = useWalletConnection();
 
   // Auto-show modal on first visit if not connected
   useEffect(() => {
@@ -138,47 +111,9 @@ export const WalletConnectModal = () => {
     }
   }, [isConnected]);
 
-  // Handle wallet connection
-  const handleConnect = async (wallet: WalletOption) => {
-    try {
-      // If it's a mobile device and we have a deep link, use that
-      if (isMobile && wallet.deepLink) {
-        openDeepLink(wallet.deepLink, wallet.installLink);
-        return;
-      }
-      
-      // Find the appropriate connector
-      const connector = connectors.find(c => {
-        const connectorId = c.id.toLowerCase();
-        
-        // Special handling for MetaMask
-        if (wallet.id === "metamask") {
-          return connectorId.includes("metamask") || c.name.toLowerCase().includes("metamask");
-        }
-        
-        // Special handling for Coinbase
-        if (wallet.id === "coinbase") {
-          return connectorId.includes("coinbase") || c.name.toLowerCase().includes("coinbase");
-        }
-        
-        // For WalletConnect-based wallets
-        if (wallet.connector === "walletConnect") {
-          return connectorId.includes("walletconnect") || c.name.toLowerCase().includes("walletconnect");
-        }
-        
-        // Default matching by connector name
-        return connectorId.includes(wallet.id) || c.name.toLowerCase().includes(wallet.id);
-      });
-
-      if (connector) {
-        await connect({ connector });
-      } else if (connectors.length > 0) {
-        // Fallback to first available connector (usually WalletConnect)
-        await connect({ connector: connectors[0] });
-      }
-    } catch (error) {
-      console.error("Failed to connect wallet:", error);
-    }
+  const handleConnect = async (walletId: string) => {
+    clearError();
+    await connectWallet(walletId);
   };
   
   // Handle showing QR code for a specific wallet
@@ -244,15 +179,46 @@ export const WalletConnectModal = () => {
             </button>
           </div>
 
+          {/* Error Display */}
+          {error && (
+            <div className="px-6 pt-4">
+              <ConnectionError
+                error={error}
+                onRetry={() => retry(connectingWallet || "metamask")}
+                onDismiss={clearError}
+              />
+            </div>
+          )}
+
           {/* Wallet Options */}
-          <div className="p-6 space-y-3 max-h-[60vh] overflow-y-auto">
-            {showQRCode && selectedWallet ? (
-              <div className="text-center p-6">
-                <h3 className="text-lg font-semibold mb-4">Scan with {selectedWallet.name}</h3>
-                <div className="bg-white p-4 rounded-lg inline-block mb-4">
-                  <div className="w-48 h-48 bg-gray-100 flex items-center justify-center">
-                    <QrCodeIcon className="w-24 h-24 text-gray-400" />
-                  </div>
+          <div className="p-6 space-y-3">
+            {WALLET_OPTIONS.map((wallet) => (
+              <button
+                key={wallet.id}
+                onClick={() => handleConnect(wallet.id)}
+                disabled={isConnecting}
+                className="w-full p-4 rounded-xl border-2 border-base-300 hover:border-[#12B76A] hover:bg-[#12B76A]/5 transition-all duration-200 flex items-center gap-4 group disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <div className="w-12 h-12 rounded-xl bg-base-200 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                  {isConnecting && connectingWallet === wallet.id ? (
+                    <span className="loading loading-spinner loading-md"></span>
+                  ) : (
+                    <Image
+                      src={wallet.icon}
+                      alt={wallet.name}
+                      width={32}
+                      height={32}
+                      className="rounded-lg"
+                    />
+                  )}
+                </div>
+                <div className="flex-1 text-left">
+                  <h3 className="font-semibold text-base-content group-hover:text-[#12B76A] transition-colors">
+                    {wallet.name}
+                  </h3>
+                  <p className="text-sm text-base-content/60">
+                    {isConnecting && connectingWallet === wallet.id ? "Connecting..." : wallet.description}
+                  </p>
                 </div>
                 <p className="text-sm text-gray-500 mb-4">
                   Scan this QR code with {selectedWallet.name} to connect

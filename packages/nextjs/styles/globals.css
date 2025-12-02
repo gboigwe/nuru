@@ -164,35 +164,20 @@
   animation: slideUp 0.3s ease-out;
 }
 
-/* Reown AppKit Custom Styling for Nuru Theme */
-/* Override Reown AppKit variables to match Nuru's green branding */
-appkit-button {
-  --wui-color-accent-100: #12B76A;
-  --wui-color-accent-090: #0E7A4B;
-  --wui-accent-color-100: #12B76A;
-  --w3m-accent: #12B76A;
-  --w3m-color-mix: #0E7A4B;
-  --w3m-color-mix-strength: 50%;
-}
+/**
+ * Reown AppKit Enhancements
+ *
+ * NOTE: Core theming (colors, fonts, border radius) is now configured via
+ * themeVariables in wagmiConfig.tsx for a more native, maintainable approach.
+ *
+ * This CSS only contains enhancements that cannot be configured via themeVariables:
+ * - Mobile responsiveness optimizations
+ * - Accessibility improvements (WCAG 2.1 AA compliance)
+ * - Loading states and animations
+ * - Touch target sizing for mobile devices
+ */
 
-/* Style the connect button */
-appkit-button::part(button) {
-  border-radius: 9999px;
-  font-weight: 600;
-}
-
-/* Network button styling */
-appkit-network-button {
-  --wui-color-accent-100: #12B76A;
-}
-
-/* Modal styling */
-w3m-modal {
-  --w3m-accent: #12B76A;
-  --w3m-background: #ffffff;
-}
-
-/* Mobile responsive styling for Reown AppKit */
+/* Mobile responsive font sizing */
 @media (max-width: 640px) {
   appkit-button {
     font-size: 14px;
@@ -203,12 +188,15 @@ w3m-modal {
   }
 }
 
-/* Ensure modals are mobile-friendly */
+/* Enhanced modal overlay for better visual hierarchy */
 w3m-modal::part(overlay) {
   backdrop-filter: blur(4px);
 }
 
-/* Improve touch targets on mobile */
+/**
+ * Touch Target Optimization (WCAG 2.1 Success Criterion 2.5.5)
+ * Minimum 44x44px touch targets for mobile devices
+ */
 @media (hover: none) and (pointer: coarse) {
   appkit-button::part(button),
   appkit-network-button::part(button) {
@@ -217,24 +205,24 @@ w3m-modal::part(overlay) {
   }
 }
 
-/* Dark mode support for Reown AppKit */
-[data-theme="dark"] appkit-button,
-[data-theme="dark"] appkit-network-button {
-  --wui-color-accent-100: #12B76A;
-  --wui-color-accent-090: #0E7A4B;
-  --w3m-accent: #12B76A;
-  --w3m-background: #1a1b1f;
-}
-
-/* Accessibility improvements */
+/**
+ * Accessibility - Focus Indicators (WCAG 2.1 Success Criterion 2.4.7)
+ * Visible focus indicators for keyboard navigation
+ */
 appkit-button:focus-visible,
-appkit-network-button:focus-visible {
+appkit-network-button:focus-visible,
+appkit-account-button:focus-visible {
   outline: 2px solid #12B76A;
   outline-offset: 2px;
 }
 
-/* Loading states */
-appkit-button[data-loading="true"]::part(button) {
+/**
+ * Loading States
+ * Visual feedback for asynchronous operations
+ */
+appkit-button[data-loading="true"]::part(button),
+appkit-network-button[data-loading="true"]::part(button) {
   cursor: wait;
   opacity: 0.7;
+  pointer-events: none;
 }

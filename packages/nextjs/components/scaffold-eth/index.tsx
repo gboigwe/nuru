@@ -13,3 +13,8 @@ export * from "./NetworkBadge";
 export * from "./ChainChecker";
 export * from "./WalletStatus";
 export * from "./NetworkSwitcher";
+export * from "./SessionStatus";
+export * from "./OnRampButton";
+export * from "./LowBalancePrompt";
+export * from "./ConnectionError";
+export * from "./ChainMismatchWarning";

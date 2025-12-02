@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { formatEther } from "viem";
 import { useAccount, useBalance } from "wagmi";
 import { useTargetNetwork } from "~~/hooks/scaffold-eth/useTargetNetwork";
+import { OnRampButton } from "~~/components/scaffold-eth/OnRampButton";
 
 export const UserBalance: React.FC = () => {
   const { address, isConnected } = useAccount();
@@ -161,6 +162,8 @@ export const UserBalance: React.FC = () => {
 
           {/* Quick Actions */}
           <div className="mt-4 space-y-2">
+            <OnRampButton size="md" variant="primary" fullWidth />
+
             <button
               onClick={() => window.open("https://www.coinbase.com/faucets/base-ethereum-sepolia-faucet", "_blank")}
               className="w-full py-2 px-3 bg-blue-50 hover:bg-blue-100 text-blue-700 text-sm font-medium rounded-lg transition-colors"
