@@ -77,9 +77,6 @@ const transports = enabledChains.reduce(
   (acc, chain) => {
     const rpcOverrideUrl = (scaffoldConfig.rpcOverrides as ScaffoldConfig["rpcOverrides"])?.[chain.id];
 
-    // Configure polling interval for each chain
-    const pollingInterval = scaffoldConfig.pollingInterval;
-
     if (rpcOverrideUrl) {
       acc[chain.id] = http(rpcOverrideUrl, { timeout: 30_000 });
     } else {
@@ -243,23 +240,6 @@ createAppKit({
     socials: ['google', 'apple', 'discord', 'farcaster'], // Enable social login options
     emailShowWallets: true, // Show wallet options alongside email login
     onramp: true, // Enable on-ramp feature for buying crypto directly within the app
-  },
-  // Configure Coinbase Smart Wallet
-  walletConnect: {
-    version: '2',
-    qrModal: true,
-    // Enable Coinbase Smart Wallet specific features
-    coinbase: {
-      // Enable smart wallet features
-      smartWallet: {
-        // Enable sponsored transactions
-        sponsorTransactions: true,
-        // Enable passkeys for better UX
-        enablePasskeys: true,
-        // Set default chain to Base for better UX
-        defaultChain: base.id,
-      },
-    },
   },
   /**
    * Theme Configuration - Nuru Brand Identity
