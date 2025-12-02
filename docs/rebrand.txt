@@ -1,0 +1,188 @@
+Here’s a crisp, developer-ready **rebranding brief** you can drop into Claude Code to drive the rename and rollout from the current “VoicePay Africa” concept to **Nuru**. I’ve tailored it to your ETHAccra build, Ghana-first launch, and Nigeria scale-up, keeping your original MVP scope in view.
+
+---
+
+# Rebranding Brief — From “VoicePay Africa” → **Nuru**
+
+## 0) Objective
+
+Rebrand the product to **Nuru** (meaning “light”) to position it as the simplest, most trustworthy way to move money by voice today and by any interface tomorrow. Preserve all technical deliverables and hackathon targets while elevating the market story.
+
+---
+
+## 1) Current Context (for continuity)
+
+* Working concept: **Voice-to-crypto remittances** using ENS, Base L2, Filecoin receipts, EFP profiles, built with Scaffold-ETH 2.
+* Demo focus: “Say ‘Send 50 cedis to mama.family.eth’ → execute on Base; store voice receipt; show ENS usage clearly.”
+* Bounty alignment: ENS (core), Base (L2 tx), EFP (identity), Filecoin (voice receipts), Buidl Guidl (Scaffold-ETH 2).
+
+---
+
+## 2) New Brand: **Nuru**
+
+* **Meaning:** “Light.” Connotes clarity, trust, speed; resonates across Ghana & Nigeria.
+* **Positioning line:** **“Light up your payments.”**
+* **Descriptor (short):** “Onchain remittance made simple.”
+* **Elevator (judge-friendly):** “Nuru turns a spoken request into a confirmed onchain payment—fast, human, and verifiable.”
+
+**Messaging pillars**
+
+1. **Simplicity:** Speak, confirm, done.
+2. **Trust & Transparency:** Human-readable names (ENS), clear receipts (Filecoin), low fees (Base).
+3. **Africa-first:** Ghana now, Nigeria next; mobile-native UX.
+
+---
+
+## 3) Visual Identity (specs Claude can apply across assets)
+
+**Palette**
+
+* Primary Green: `#12B76A` (fresh finance)
+* Deep Green (text/brand): `#0E7A4B`
+* White: `#FFFFFF`
+* Accent Gold (optional highlight): `#C9A227`
+* Neutral Ink: `#111827` (for legibility)
+
+**Logo system**
+
+* Wordmark: **Nuru** (geometric, rounded corners).
+* Mark: **Circular “ray” symbol** (a dot with 6–8 short rays) or **path-shaped “N”** implying a beam/light path.
+* Safe-use: min clear space = 0.5× logo height.
+* App icon: green field with white mark; alt: white field with deep-green mark.
+* Do **not** place glow effects on small sizes; keep strokes ≥ 2px at 48×48.
+
+**Typography**
+
+* Display: **Inter** or **Satoshi** (600/700 for headers).
+* Body: **Inter** 400/500.
+* Numerals: tabular lining for balances and fees.
+
+**Iconography**
+
+* Line icons at 1.5px stroke; corner radius 2px; avoid skeuomorphism.
+
+**Motion**
+
+* 180–240ms ease-out; “ray” mark can subtly radiate on success.
+
+**Accessibility**
+
+* Colour contrast AA minimum (≥ 4.5:1); scalable font sizes; captions for voice UI.
+
+---
+
+## 4) UX Copy Guidelines (Ghana → Nigeria)
+
+* **Tone:** Clear, friendly, confident.
+* Success: “₵50 sent to *mama.family.eth*. View receipt.”
+* Errors: Specific + recovery (“I couldn’t find that ENS name. Try again or type it.”).
+* Localisation placeholders: `en-GH` (cedis ₵), `en-NG` (naira ₦), keep USD/USDC support.
+
+---
+
+## 5) Technical Rename Plan (repo + code + infra)
+
+> Goal: zero ambiguity; everything user-facing and dev-facing says **Nuru** while preserving working demo paths.
+
+**A. Repos & Docs**
+
+* Rename repo: `nuru` (or `nuru-pay`).
+* Update `README.md`, architecture diagrams, and bounty notes to “Nuru”, keeping the same ENS/Base/EFP/Filecoin value proof.
+* Create `BRANDING.md` with the specs above (palette, typography, logo usage).
+
+**B. Packages & Namespaces**
+
+* App name: `Nuru`
+* iOS bundle id / Android appId: `com.nuru.app` (or `io.nuru.app` if needed).
+* NPM/package names: from `voicepay-*` → `nuru-*`.
+* Env var prefixes: `NURU_*` (migrate `.env.example`).
+
+**C. Smart Contracts & Onchain**
+
+* Contract names: `NuruRemittance`, `NuruRegistry` (if you had `VoiceRemittance` rename surfaces & docs; keep addresses stable for demo unless redeploy is trivial).
+* Event strings & comments: “Nuru” for clarity.
+* **ENS integration remains core** (don’t downplay; it’s your ENS bounty heart).
+* Verify contracts on Base Sepolia again post-rename.
+
+**D. Frontend**
+
+* Replace visible copy: nav title, splash, toasts, meta tags.
+* App icon & favicons: export 16/32/48/64/96/128/256/512.
+* Update Open Graph/Twitter images (“Nuru • Light up your payments”).
+
+**E. Storage & Metadata**
+
+* Filecoin paths/namespaces: update metadata keys from `voicepay` → `nuru`.
+* Keep receipt schema stable; only rename labels.
+
+**F. Analytics & Telemetry**
+
+* Update source/app names in product analytics (Mixpanel/GA).
+* Maintain old property for a week with alias events to avoid breaking dashboards.
+
+**G. URLs & SEO**
+
+* Domain: `usenuru.com` / `nuru.africa` (reserve both if possible).
+* Redirects: from any “voicepay” pages → “/nuru”.
+* Sitemap & robots updated.
+
+**H. Security & Compliance**
+
+* Re-issue keys/names where branding appears.
+* Update privacy policy/ToS references (brand name only; keep scope identical to MVP).
+
+---
+
+## 6) Asset Tasks for Claude to Generate
+
+* Logo pack (SVG + PNG):
+
+  * Primary green on white, white on green, one-colour black, one-colour white.
+* App icons (iOS/Android + PWA) and favicons.
+* Slide cover template (16:9): “Nuru” title, tagline, green beam motif.
+* Social headers (X, LinkedIn) with safe zones.
+* One-pager PDF (A4): problem → solution → how it works → ENS/Base/Filecoin proof.
+
+---
+
+## 7) Content to Update (keep bounty story intact)
+
+* **README**: swap “VoicePay Africa” → **Nuru**, keep same demo script: say → parse → ENS → Base tx → Filecoin receipt.
+* **BOUNTY\_COMPLIANCE.md**: emphasise ENS as **central UX** (not a bolt-on); include Base tx hash; show Filecoin receipt CID; reference Scaffold-ETH 2 usage.
+* **TECHNICAL\_ARCHITECTURE.md**: rename components; keep diagrams.
+
+---
+
+## 8) Launch Checklist (Hackathon mode)
+
+* ✅ Base Sepolia deployment live; contracts verified
+* ✅ Test ENS names funded and resolvable
+* ✅ Demo scenario scripts:
+
+  * “Send 10 USDC to mama.family.eth”
+  * “Transfer 50 cedis to kofi.ghana.eth”
+* ✅ Voice fallback: simple text input if mic permission fails
+* ✅ Backup: offline 60-second demo video
+* ✅ QR to live demo + repo on slide 1
+
+---
+
+## 9) Timeline (fast track)
+
+* **Day 0 (today):** Apply branding to repo/docs, export assets, update UI copy.
+* **Day 1:** Contract comment/event renames, redeploy if trivial, verify; regenerate screenshots/video.
+* **Day 2:** Final polish, practice 4-minute demo; sanity-check bounty narratives.
+
+---
+
+## 10) Success Criteria
+
+* Judges see **Nuru** consistently across UI, slides, and code.
+* ENS is visibly integral (names in flows, receipts, and tx logs).
+* Base tx confirmed in <30s; receipt CID accessible.
+* Brand feels Ghana-first, Nigeria-ready; simple, memorable, trustworthy.
+
+---
+
+If you want, I can output a **ready-to-drop `BRANDING.md`** plus a **logo/export bundle** with all required sizes, or generate a **deck cover + social header set** matching the Nuru spec.
+
