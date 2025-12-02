@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { useAccount, useConnect, useDisconnect } from "wagmi";
+import { useAccount, useDisconnect } from "wagmi";
 import { XMarkIcon } from "@heroicons/react/24/outline";
+import { useWalletConnection } from "~~/hooks/scaffold-eth/useWalletConnection";
+import { ConnectionError } from "~~/components/scaffold-eth/ConnectionError";
 
 /**
  * Custom Wallet Connect Modal for Nuru
@@ -59,8 +61,8 @@ export const WalletConnectModal = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [hasShownModal, setHasShownModal] = useState(false);
   const { address, isConnected } = useAccount();
-  const { connect, connectors, isPending } = useConnect();
   const { disconnect } = useDisconnect();
+  const { connectWallet, retry, clearError, error, isConnecting, connectingWallet } = useWalletConnection();
 
   // Auto-show modal on first visit if not connected
   useEffect(() => {
@@ -87,36 +89,8 @@ export const WalletConnectModal = () => {
   }, [isConnected]);
 
   const handleConnect = async (walletId: string) => {
-    try {
-      // Find the appropriate connector
-      const connector = connectors.find(c => {
-        const connectorId = c.id.toLowerCase();
-        const walletOption = WALLET_OPTIONS.find(w => w.id === walletId);
-
-        if (walletId === "metamask") {
-          return connectorId.includes("metamask") || c.name.toLowerCase().includes("metamask");
-        }
-        if (walletId === "coinbase") {
-          return connectorId.includes("coinbase") || c.name.toLowerCase().includes("coinbase");
-        }
-        if (walletId === "walletconnect" || walletId === "trust") {
-          return connectorId.includes("walletconnect") || c.name.toLowerCase().includes("walletconnect");
-        }
-
-        return false;
-      });
-
-      if (connector) {
-        await connect({ connector });
-      } else {
-        // Fallback: use first available connector (usually WalletConnect)
-        if (connectors.length > 0) {
-          await connect({ connector: connectors[0] });
-        }
-      }
-    } catch (error) {
-      console.error("Failed to connect wallet:", error);
-    }
+    clearError();
+    await connectWallet(walletId);
   };
 
   const handleClose = () => {
@@ -175,30 +149,45 @@ export const WalletConnectModal = () => {
             </button>
           </div>
 
+          {/* Error Display */}
+          {error && (
+            <div className="px-6 pt-4">
+              <ConnectionError
+                error={error}
+                onRetry={() => retry(connectingWallet || "metamask")}
+                onDismiss={clearError}
+              />
+            </div>
+          )}
+
           {/* Wallet Options */}
           <div className="p-6 space-y-3">
             {WALLET_OPTIONS.map((wallet) => (
               <button
                 key={wallet.id}
                 onClick={() => handleConnect(wallet.id)}
-                disabled={isPending}
+                disabled={isConnecting}
                 className="w-full p-4 rounded-xl border-2 border-base-300 hover:border-[#12B76A] hover:bg-[#12B76A]/5 transition-all duration-200 flex items-center gap-4 group disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <div className="w-12 h-12 rounded-xl bg-base-200 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
-                  <Image
-                    src={wallet.icon}
-                    alt={wallet.name}
-                    width={32}
-                    height={32}
-                    className="rounded-lg"
-                  />
+                  {isConnecting && connectingWallet === wallet.id ? (
+                    <span className="loading loading-spinner loading-md"></span>
+                  ) : (
+                    <Image
+                      src={wallet.icon}
+                      alt={wallet.name}
+                      width={32}
+                      height={32}
+                      className="rounded-lg"
+                    />
+                  )}
                 </div>
                 <div className="flex-1 text-left">
                   <h3 className="font-semibold text-base-content group-hover:text-[#12B76A] transition-colors">
                     {wallet.name}
                   </h3>
                   <p className="text-sm text-base-content/60">
-                    {wallet.description}
+                    {isConnecting && connectingWallet === wallet.id ? "Connecting..." : wallet.description}
                   </p>
                 </div>
                 <svg
