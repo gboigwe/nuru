@@ -11,7 +11,7 @@
 import { useEffect, useState } from "react";
 import { useBalance } from "wagmi";
 import { formatEther } from "viem";
-import { OnRampButton } from "./OnRampButton";
+import { OnchainFundCard } from "~~/components/onchainkit/OnchainFundCard";
 
 interface InsufficientBalancePromptProps {
   currentBalance: bigint;
@@ -89,7 +89,15 @@ export const InsufficientBalancePrompt = ({
         </div>
 
         <div className="flex flex-col gap-2">
-          <OnRampButton size="md" variant="primary" fullWidth />
+          <OnchainFundCard
+            onSuccess={() => {
+              console.log("Funds added successfully, checking balance...");
+              setIsWaitingForFunds(true);
+            }}
+            onError={(error: unknown) => {
+              console.error("Failed to add funds:", error);
+            }}
+          />
           {isWaitingForFunds && (
             <div className="bg-base-200 rounded-lg p-3 flex items-center gap-2">
               <span className="loading loading-spinner loading-sm"></span>
