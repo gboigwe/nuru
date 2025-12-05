@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
+import { CustomConnectButton } from "~~/components/WalletConnect";
+import { useVoiceRecognition } from "~~/hooks/useVoiceRecognition";
 
 interface DemoPayment {
   id: string;
@@ -22,10 +24,25 @@ const DEMO_COMMANDS = [
 
 export const NuruDemoInterface: React.FC = () => {
   const [currentStep, setCurrentStep] = useState<"demo" | "recording" | "processing" | "success">("demo");
-  const [isRecording, setIsRecording] = useState(false);
   const [demoPayments, setDemoPayments] = useState<DemoPayment[]>([]);
   const [selectedCommand, setSelectedCommand] = useState<string>("");
   const [showSuccess, setShowSuccess] = useState(false);
+
+  // Real voice recognition
+  const {
+    transcript,
+    interimTranscript,
+    isListening,
+    isSupported,
+    error: voiceError,
+    startListening,
+    stopListening,
+    resetTranscript,
+  } = useVoiceRecognition({
+    language: 'en-US',
+    continuous: false,
+    interimResults: true,
+  });
 
   const simulatePayment = useCallback((command: string) => {
     setCurrentStep("processing");
@@ -65,16 +82,30 @@ export const NuruDemoInterface: React.FC = () => {
   }, []);
 
   const handleVoiceDemo = useCallback(() => {
-    setCurrentStep("recording");
-    setIsRecording(true);
+    if (!isSupported) {
+      alert('Voice recognition is not supported in your browser. Please use Chrome or Edge.');
+      return;
+    }
 
-    // Simulate recording for 2 seconds
-    setTimeout(() => {
-      setIsRecording(false);
-      const randomCommand = DEMO_COMMANDS[Math.floor(Math.random() * DEMO_COMMANDS.length)];
-      simulatePayment(randomCommand);
-    }, 2000);
-  }, [simulatePayment]);
+    setCurrentStep("recording");
+    resetTranscript();
+    startListening();
+  }, [isSupported, startListening, resetTranscript]);
+
+  // Process transcript when available
+  useEffect(() => {
+    if (transcript && !isListening) {
+      // Voice recording complete
+      simulatePayment(transcript);
+    }
+  }, [transcript, isListening, simulatePayment]);
+
+  // Update step based on listening state
+  useEffect(() => {
+    if (isListening) {
+      setCurrentStep("recording");
+    }
+  }, [isListening]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-100 relative overflow-hidden">
@@ -87,7 +118,7 @@ export const NuruDemoInterface: React.FC = () => {
 
       {/* Nuru Header */}
       <div className="relative z-10 bg-white/80 backdrop-blur-lg border-b border-green-200 shadow-sm">
-        <div className="max-w-md mx-auto px-6 py-6">
+        <div className="max-w-4xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center shadow-lg">
@@ -98,8 +129,11 @@ export const NuruDemoInterface: React.FC = () => {
                 <p className="font-medium text-sm" style={{color: '#12B76A'}}>Light up your payments</p>
               </div>
             </div>
-            <div className="text-right">
-              <div className="text-xs text-gray-600 mt-1">Base Sepolia</div>
+            <div className="flex items-center gap-3">
+              <div className="text-right hidden sm:block">
+                <div className="text-xs text-gray-600">Base Sepolia</div>
+              </div>
+              <CustomConnectButton />
             </div>
           </div>
         </div>
@@ -130,6 +164,11 @@ export const NuruDemoInterface: React.FC = () => {
                 </div>
                 <h2 className="text-2xl font-bold mb-2" style={{color: '#12B76A'}}>Listening...</h2>
                 <p className="text-gray-700 text-lg">Nuru is capturing your voice command</p>
+                {interimTranscript && (
+                  <div className="bg-green-50 rounded-xl p-4 mt-4 mb-2 border border-green-200">
+                    <p className="text-sm text-gray-600 italic">&quot;{interimTranscript}&quot;</p>
+                  </div>
+                )}
                 <div className="flex justify-center mt-4">
                   <div className="flex space-x-1">
                     <div className="w-2 h-8 rounded animate-pulse" style={{backgroundColor: '#12B76A'}}></div>
@@ -139,6 +178,14 @@ export const NuruDemoInterface: React.FC = () => {
                     <div className="w-2 h-7 rounded animate-pulse" style={{backgroundColor: '#12B76A'}}></div>
                   </div>
                 </div>
+                {isListening && (
+                  <button
+                    onClick={stopListening}
+                    className="mt-4 px-4 py-2 bg-red-500 text-white rounded-lg text-sm hover:bg-red-600"
+                  >
+                    Stop Recording
+                  </button>
+                )}
               </>
             )}
 
@@ -183,8 +230,8 @@ export const NuruDemoInterface: React.FC = () => {
             {/* Voice Demo Button */}
             <button
               onClick={handleVoiceDemo}
-              disabled={isRecording}
-              className="w-full text-white font-bold py-6 px-8 rounded-3xl transition-all transform hover:scale-105 shadow-2xl border-2"
+              disabled={!isSupported || isListening}
+              className="w-full text-white font-bold py-6 px-8 rounded-3xl transition-all transform hover:scale-105 shadow-2xl border-2 disabled:opacity-50 disabled:cursor-not-allowed"
               style={{
                 background: `linear-gradient(135deg, #12B76A 0%, #0E7A4B 100%)`,
                 borderColor: '#12B76A'
@@ -193,12 +240,20 @@ export const NuruDemoInterface: React.FC = () => {
               <div className="flex items-center justify-center space-x-4">
                 <div className="text-3xl animate-pulse">🎤</div>
                 <div>
-                  <div className="text-lg">Try Voice Payment</div>
-                  <div className="text-sm text-green-100">Tap to start try</div>
+                  <div className="text-lg">{isSupported ? 'Start Voice Payment' : 'Voice Not Supported'}</div>
+                  <div className="text-sm text-green-100">
+                    {isSupported ? 'Tap to speak your command' : 'Please use Chrome or Edge'}
+                  </div>
                 </div>
               </div>
             </button>
 
+            {/* Error Display */}
+            {voiceError && (
+              <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+                <p className="text-red-800 text-sm">{voiceError}</p>
+              </div>
+            )}
           </div>
         )}
 
