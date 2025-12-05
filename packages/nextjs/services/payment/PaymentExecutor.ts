@@ -1,6 +1,9 @@
-import { Contract, parseEther, formatEther, BrowserProvider, JsonRpcSigner } from 'ethers';
+import { Contract, parseEther, formatEther, parseUnits, BrowserProvider, JsonRpcSigner } from 'ethers';
+import { type Address } from 'viem';
 import { voicePayService, ProcessedVoiceCommand } from '../VoicePayService';
 import { synapseFilecoinStorage } from '../storage/SynapseFilecoinStorage';
+import { USDCPaymentHandler } from './USDCPaymentHandler';
+import { CURRENCIES, SupportedCurrency } from '~~/constants/currencies';
 
 /**
  * Payment execution service that integrates with VoiceRemittance smart contract
@@ -63,7 +66,7 @@ export class PaymentExecutor {
         throw new Error('Payment executor not initialized');
       }
 
-      const { intent, ensResolution } = processedCommand;
+      const { intent, ensResolution, basenameResolution } = processedCommand;
 
       // Validate the command is for payment
       if (intent.action !== 'send_money') {
@@ -74,9 +77,10 @@ export class PaymentExecutor {
         throw new Error(`Invalid payment command: ${processedCommand.errors.join(', ')}`);
       }
 
-      // Ensure ENS is resolved
-      if (!ensResolution?.address) {
-        throw new Error('ENS name could not be resolved to an address');
+      // Get resolved address from either ENS or Basename
+      const resolvedAddress = basenameResolution?.address || ensResolution?.address;
+      if (!resolvedAddress) {
+        throw new Error('Recipient name could not be resolved to an address');
       }
 
       // Convert amount to Wei (assuming ETH for now, can be extended for other currencies)
@@ -89,7 +93,7 @@ export class PaymentExecutor {
         amount: intent.amount,
         currency: intent.currency,
         sender: await this.signer.getAddress(),
-        recipient: ensResolution.address,
+        recipient: resolvedAddress,
         recipientENS: intent.recipient,
         timestamp: Date.now(),
         audioFormat: 'webm',
@@ -116,33 +120,66 @@ export class PaymentExecutor {
         filecoinPieceCid: storedReceipt.pieceCid
       });
 
+      // Check if this is a USDC payment
+      const isUSDCPayment = ['usdc', 'usd coin'].includes(intent.currency.toLowerCase());
+
       // Estimate gas before execution
       try {
-        const estimatedGas = await this.contract.initiatePayment.estimateGas(
-          intent.recipient,
-          storedReceipt.pieceCid, // Use Filecoin PieceCID instead of hash
-          intent.currency.toUpperCase(),
-          metadata,
-          { value: amountInWei }
-        );
+        let estimatedGas: bigint;
+        let tx: any;
+
+        if (isUSDCPayment) {
+          // USDC Payment via initiateUSDCPayment function
+          console.log('Executing USDC payment...');
+
+          estimatedGas = await this.contract.initiateUSDCPayment.estimateGas(
+            resolvedAddress, // Use resolved address instead of ENS name
+            amountInWei,
+            storedReceipt.pieceCid,
+            metadata
+          );
+
+          console.log(`Estimated gas for USDC: ${estimatedGas.toString()}`);
+
+          // Execute USDC payment transaction
+          tx = await this.contract.initiateUSDCPayment(
+            resolvedAddress,
+            amountInWei,
+            storedReceipt.pieceCid,
+            metadata,
+            {
+              gasLimit: (estimatedGas * BigInt(120)) / BigInt(100), // 20% buffer
+            },
+          );
+        } else {
+          // ETH Payment via initiatePayment function (payable)
+          console.log('Executing ETH payment...');
+
+          estimatedGas = await this.contract.initiatePayment.estimateGas(
+            intent.recipient,
+            storedReceipt.pieceCid,
+            intent.currency.toUpperCase(),
+            metadata,
+            { value: amountInWei },
+          );
+
+          console.log(`Estimated gas for ETH: ${estimatedGas.toString()}`);
+
+          // Execute ETH payment transaction
+          tx = await this.contract.initiatePayment(
+            intent.recipient,
+            storedReceipt.pieceCid,
+            intent.currency.toUpperCase(),
+            metadata,
+            {
+              value: amountInWei,
+              gasLimit: (estimatedGas * BigInt(120)) / BigInt(100), // 20% buffer
+            },
+          );
+        }
 
         const gasPrice = await this.provider!.getFeeData();
-
-        console.log(`Estimated gas: ${estimatedGas.toString()}`);
         console.log(`Gas price: ${gasPrice.gasPrice?.toString()}`);
-
-        // Execute the transaction
-        const tx = await this.contract.initiatePayment(
-          intent.recipient,
-          storedReceipt.pieceCid, // Use Filecoin PieceCID
-          intent.currency.toUpperCase(),
-          metadata,
-          { 
-            value: amountInWei,
-            gasLimit: estimatedGas * BigInt(120) / BigInt(100) // 20% buffer
-          }
-        );
-
         console.log('Transaction submitted:', tx.hash);
 
         // Wait for transaction confirmation
@@ -159,9 +196,8 @@ export class PaymentExecutor {
           estimatedGas,
           gasPrice: gasPrice.gasPrice || BigInt(0),
           voiceReceiptCid: storedReceipt.pieceCid,
-          amountSent: intent.amount
+          amountSent: intent.amount,
         };
-
       } catch (gasError) {
         console.error('Gas estimation failed:', gasError);
         throw new Error(`Transaction would fail: ${gasError instanceof Error ? gasError.message : 'Unknown error'}`);
@@ -385,25 +421,40 @@ export class PaymentExecutor {
 
   private convertToWei(amount: string, currency: string): bigint {
     const numericAmount = parseFloat(amount);
-    
+
     switch (currency.toLowerCase()) {
       case 'eth':
       case 'ether':
         return parseEther(amount);
-      
+
       case 'usdc':
+      case 'usd coin':
+        // USDC uses 6 decimals, not 18
+        return parseUnits(amount, 6);
+
       case 'dollars':
-        // For demo purposes, treat as ETH equivalent
-        // In production, this would involve USDC token contracts
-        return parseEther(amount);
-      
+      case 'usd':
+        // Treat USD as USDC (6 decimals)
+        return parseUnits(amount, 6);
+
       case 'cedis':
-        // Convert Cedis to ETH equivalent (mock rate: 1 ETH = 40,000 GHS)
-        const ethAmount = numericAmount / 40000;
-        return parseEther(ethAmount.toString());
-      
-      default:
+      case 'ghs':
+        // Convert Cedis to USDC using current exchange rate
+        // Mock rate: 1 USD = 12 GHS (approximate)
+        const usdAmount = numericAmount / 12;
+        return parseUnits(usdAmount.toFixed(6), 6);
+
+      case 'usdt':
+        // USDT also uses 6 decimals
+        return parseUnits(amount, 6);
+
+      case 'dai':
+        // DAI uses 18 decimals like ETH
         return parseEther(amount);
+
+      default:
+        // Default to USDC format (6 decimals) for unknown currencies
+        return parseUnits(amount, 6);
     }
   }
 

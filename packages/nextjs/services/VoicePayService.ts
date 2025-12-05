@@ -1,4 +1,5 @@
 import { ensService, ENSService, ENSResolutionResult } from './ens/ENSService';
+import { basenameService, BasenameService, BasenameResolutionResult } from './ens/BasenameService';
 import { voiceCommandProcessor, VoiceCommandProcessor, PaymentIntent } from './voice/VoiceCommandProcessor';
 
 /**
@@ -7,6 +8,7 @@ import { voiceCommandProcessor, VoiceCommandProcessor, PaymentIntent } from './v
 export interface ProcessedVoiceCommand {
   intent: PaymentIntent;
   ensResolution?: ENSResolutionResult;
+  basenameResolution?: BasenameResolutionResult;
   isValid: boolean;
   errors: string[];
   suggestions: string[];
@@ -22,6 +24,7 @@ export interface VoiceToPaymentResult {
 export class VoicePayService {
   constructor(
     private ensService: ENSService,
+    private basenameService: BasenameService,
     private voiceProcessor: VoiceCommandProcessor
   ) {}
 
@@ -51,12 +54,23 @@ export class VoicePayService {
       // Step 2: Validate voice command
       const validation = this.voiceProcessor.validateVoiceCommand(intent);
       
-      // Step 3: Resolve ENS if needed
+      // Step 3: Resolve ENS or Basename if needed
       let ensResolution: ENSResolutionResult | undefined;
+      let basenameResolution: BasenameResolutionResult | undefined;
+
       if (intent.action === 'send_money' && intent.recipient) {
-        if (intent.recipient.endsWith('.eth')) {
+        if (intent.recipient.endsWith('.base.eth')) {
+          // Resolve Basename (BASE L2 naming service)
+          basenameResolution = await this.basenameService.resolveBasenameToAddress(intent.recipient);
+
+          // Add Basename validation errors
+          if (!basenameResolution.address) {
+            validation.errors.push(`Basename "${intent.recipient}" could not be resolved`);
+          }
+        } else if (intent.recipient.endsWith('.eth')) {
+          // Resolve ENS (Ethereum mainnet)
           ensResolution = await this.ensService.resolveENSToAddress(intent.recipient);
-          
+
           // Add ENS validation errors
           if (!ensResolution.address) {
             validation.errors.push(`ENS name "${intent.recipient}" could not be resolved`);
@@ -72,6 +86,7 @@ export class VoicePayService {
       const processedCommand: ProcessedVoiceCommand = {
         intent,
         ensResolution,
+        basenameResolution,
         isValid: validation.isValid,
         errors: validation.errors,
         suggestions
@@ -121,18 +136,29 @@ export class VoicePayService {
     const basicValidation = this.voiceProcessor.validateVoiceCommand(intent);
     errors.push(...basicValidation.errors);
 
-    // ENS resolution validation
-    if (intent.recipient && intent.recipient.endsWith('.eth')) {
-      const ensResult = await this.ensService.resolveENSToAddress(intent.recipient);
-      if (!ensResult.address) {
-        errors.push(`Cannot resolve ENS name: ${intent.recipient}`);
-      } else {
-        resolvedAddress = ensResult.address;
-        
-        // Check if ENS name actually exists (has resolver)
-        const exists = await this.ensService.ensExists(intent.recipient);
-        if (!exists) {
-          errors.push(`ENS name ${intent.recipient} does not exist`);
+    // ENS or Basename resolution validation
+    if (intent.recipient) {
+      if (intent.recipient.endsWith('.base.eth')) {
+        // Basename resolution
+        const basenameResult = await this.basenameService.resolveBasenameToAddress(intent.recipient);
+        if (!basenameResult.address) {
+          errors.push(`Cannot resolve Basename: ${intent.recipient}`);
+        } else {
+          resolvedAddress = basenameResult.address;
+        }
+      } else if (intent.recipient.endsWith('.eth')) {
+        // ENS resolution
+        const ensResult = await this.ensService.resolveENSToAddress(intent.recipient);
+        if (!ensResult.address) {
+          errors.push(`Cannot resolve ENS name: ${intent.recipient}`);
+        } else {
+          resolvedAddress = ensResult.address;
+
+          // Check if ENS name actually exists (has resolver)
+          const exists = await this.ensService.ensExists(intent.recipient);
+          if (!exists) {
+            errors.push(`ENS name ${intent.recipient} does not exist`);
+          }
         }
       }
     }
@@ -181,15 +207,16 @@ export class VoicePayService {
       confidence: number;
     };
   } {
-    const { intent, ensResolution } = processedCommand;
-    
+    const { intent, ensResolution, basenameResolution } = processedCommand;
+
     let summary = '';
     let recipientAddress: string | undefined;
 
     if (intent.action === 'send_money') {
       summary = `Send ${intent.amount} ${intent.currency.toUpperCase()} to ${intent.recipient}`;
-      recipientAddress = ensResolution?.address || undefined;
-      
+      // Check both ENS and Basename resolution
+      recipientAddress = basenameResolution?.address || ensResolution?.address || undefined;
+
       if (recipientAddress) {
         summary += ` (${recipientAddress.slice(0, 6)}...${recipientAddress.slice(-4)})`;
       }
@@ -268,4 +295,4 @@ export class VoicePayService {
 }
 
 // Export singleton instance
-export const voicePayService = new VoicePayService(ensService, voiceCommandProcessor);
+export const voicePayService = new VoicePayService(ensService, basenameService, voiceCommandProcessor);
