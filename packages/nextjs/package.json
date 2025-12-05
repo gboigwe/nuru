@@ -16,6 +16,7 @@
     "vercel:login": "vercel login"
   },
   "dependencies": {
+    "@coinbase/wallet-sdk": "~4.3.6",
     "@filoz/synapse-sdk": "^0.24.1",
     "@heroicons/react": "^2.1.5",
     "@reown/appkit": "^1.6.0",

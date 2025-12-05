@@ -5,6 +5,7 @@ import { useAccount } from "wagmi";
 import { ProcessedVoiceCommand } from "../../services/VoicePayService";
 import { useBalanceCheck } from "~~/hooks/scaffold-eth/useBalanceCheck";
 import { InsufficientBalancePrompt } from "~~/components/scaffold-eth/InsufficientBalancePrompt";
+import { IdentityDisplay } from "~~/components/onchainkit/IdentityDisplay";
 
 interface PaymentConfirmationProps {
   processedCommand: ProcessedVoiceCommand;
@@ -73,11 +74,6 @@ export const PaymentConfirmation: React.FC<PaymentConfirmationProps> = ({
     }
   };
 
-  // Format address for display
-  const formatAddress = (address: string): string => {
-    if (address.length <= 10) return address;
-    return `${address.slice(0, 6)}...${address.slice(-4)}`;
-  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -106,32 +102,37 @@ export const PaymentConfirmation: React.FC<PaymentConfirmationProps> = ({
           <div className="space-y-3">
             <h3 className="text-sm font-medium text-gray-600">Send To</h3>
 
-            {/* ENS Name */}
-            <div className="bg-blue-50 rounded-lg p-4">
-              <div className="flex items-center space-x-3">
-                <div className="text-2xl">👤</div>
-                <div className="flex-1">
-                  <p className="font-semibold text-blue-800">{intent.recipient}</p>
-                  <p className="text-sm text-blue-600">ENS Name</p>
+            {/* Identity Display with ENS/Basename */}
+            {ensResolution?.isValid && ensResolution.address ? (
+              <div className="bg-blue-50 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <IdentityDisplay
+                    address={ensResolution.address as `0x${string}`}
+                    showAvatar={true}
+                    showName={true}
+                    showAddress={true}
+                    className="flex-1"
+                  />
+                  <div className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                    ✓ Verified
+                  </div>
                 </div>
-                <div
-                  className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    ensResolution?.isValid ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-                  }`}
-                >
-                  {ensResolution?.isValid ? "✓ Verified" : "✗ Invalid"}
+                <div className="mt-2 pt-2 border-t border-blue-100">
+                  <p className="text-xs text-blue-600">
+                    Requested: <span className="font-semibold">{intent.recipient}</span>
+                  </p>
                 </div>
               </div>
-            </div>
-
-            {/* Resolved Address */}
-            {ensResolution?.isValid && ensResolution.address && (
-              <div className="bg-gray-50 rounded-lg p-4">
+            ) : (
+              <div className="bg-blue-50 rounded-lg p-4">
                 <div className="flex items-center space-x-3">
-                  <div className="text-lg">🔗</div>
+                  <div className="text-2xl">👤</div>
                   <div className="flex-1">
-                    <p className="font-mono text-sm text-gray-800">{formatAddress(ensResolution.address)}</p>
-                    <p className="text-xs text-gray-500">Resolved Address</p>
+                    <p className="font-semibold text-blue-800">{intent.recipient}</p>
+                    <p className="text-sm text-blue-600">ENS/Basename</p>
+                  </div>
+                  <div className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
+                    ✗ Invalid
                   </div>
                 </div>
               </div>
@@ -178,15 +179,15 @@ export const PaymentConfirmation: React.FC<PaymentConfirmationProps> = ({
             </div>
           </div>
 
-          {/* Warning for Invalid ENS */}
+          {/* Warning for Invalid ENS/Basename */}
           {!ensResolution?.isValid && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-4">
               <div className="flex items-start space-x-3">
                 <div className="text-lg">⚠️</div>
                 <div className="flex-1">
-                  <p className="font-medium text-red-800">ENS Resolution Failed</p>
+                  <p className="font-medium text-red-800">Name Resolution Failed</p>
                   <p className="text-sm text-red-600">
-                    The ENS name could not be resolved to a valid address. Please check the name and try again.
+                    The name could not be resolved to a valid address. Supported formats: .eth (ENS) and .base.eth (Basename). Please check the name and try again.
                   </p>
                 </div>
               </div>
