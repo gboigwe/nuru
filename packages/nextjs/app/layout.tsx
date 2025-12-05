@@ -2,14 +2,14 @@ import { ScaffoldEthAppWithProviders } from "~~/components/ScaffoldEthAppWithPro
 import { ThemeProvider } from "~~/components/ThemeProvider";
 import { OnboardingWrapper } from "~~/components/onboarding/OnboardingWrapper";
 import "~~/styles/globals.css";
-import { getMetadata } from "~~/utils/scaffold-eth/getMetadata";
+import { getMetadata, getViewport } from "~~/utils/scaffold-eth/getMetadata";
 
 export const metadata = getMetadata({
   title: "Nuru - Light up your payments",
   description: "Voice-powered crypto remittances for Africa. Built with ✨ at ETH Accra 2024",
-  themeColor: "#12B76A",
-  viewport: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no",
 });
+
+export const viewport = getViewport();
 
 const ScaffoldEthApp = ({ children }: { children: React.ReactNode }) => {
 

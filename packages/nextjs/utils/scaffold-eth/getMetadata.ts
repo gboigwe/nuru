@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 
 const baseUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL
   ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
@@ -9,14 +9,10 @@ export const getMetadata = ({
   title,
   description,
   imageRelativePath = "/thumbnail.jpg",
-  themeColor = "#12B76A",
-  viewport = "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no",
 }: {
   title: string;
   description: string;
   imageRelativePath?: string;
-  themeColor?: string;
-  viewport?: string;
 }): Metadata => {
   const imageUrl = `${baseUrl}${imageRelativePath}`;
 
@@ -27,8 +23,6 @@ export const getMetadata = ({
       template: titleTemplate,
     },
     description: description,
-    themeColor: themeColor,
-    viewport: viewport,
     manifest: '/manifest.json',
     appleWebApp: {
       capable: true,
@@ -63,5 +57,15 @@ export const getMetadata = ({
       description: description,
       images: [imageUrl],
     },
+  };
+};
+
+export const getViewport = (themeColor: string = "#12B76A"): Viewport => {
+  return {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+    themeColor: themeColor,
   };
 };
