@@ -3,10 +3,12 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { useAccount } from "wagmi";
 import { CustomConnectButton } from "~~/components/WalletConnect";
+import { LanguageSelector } from "~~/components/voicepay/LanguageSelector";
 import { useVoiceRecognition } from "~~/hooks/useVoiceRecognition";
 import { useUSDCBalance } from "~~/hooks/useUSDCBalance";
 import { useUSDCApproval } from "~~/hooks/useUSDCApproval";
 import { useVoicePay } from "~~/hooks/useVoicePay";
+import { useVoiceContext } from "~~/hooks/useVoiceContext";
 import { useDeployedContractInfo } from "~~/hooks/scaffold-eth";
 
 interface DemoPayment {
@@ -35,9 +37,27 @@ export const NuruDemoInterface: React.FC = () => {
   const [showSuccess, setShowSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [needsApproval, setNeedsApproval] = useState(false);
+  const [selectedLanguage, setSelectedLanguage] = useState<string>('en');
 
   // Get contract info
   const { data: contractInfo } = useDeployedContractInfo("VoiceRemittance");
+
+  // Voice context for follow-up commands
+  const { updateAfterPayment, context } = useVoiceContext();
+
+  // Map language code to speech recognition locale
+  const getVoiceLocale = (lang: string) => {
+    const localeMap: Record<string, string> = {
+      en: 'en-US',
+      tw: 'tw-GH', // Twi (Ghana)
+      ha: 'ha-NG', // Hausa (Nigeria)
+      ig: 'ig-NG', // Igbo (Nigeria)
+      yo: 'yo-NG', // Yoruba (Nigeria)
+      fr: 'fr-FR', // French
+      sw: 'sw-KE', // Swahili (Kenya)
+    };
+    return localeMap[lang] || 'en-US';
+  };
 
   // Real voice recognition
   const {
@@ -50,7 +70,7 @@ export const NuruDemoInterface: React.FC = () => {
     stopListening,
     resetTranscript,
   } = useVoiceRecognition({
-    language: 'en-US',
+    language: getVoiceLocale(selectedLanguage),
     continuous: false,
     interimResults: true,
   });
@@ -60,7 +80,7 @@ export const NuruDemoInterface: React.FC = () => {
   const { approve, approvalStatus, approvalError, isApproving } = useUSDCApproval();
 
   // Voice payment execution
-  const { processVoicePayment, isProcessing, paymentResult, paymentError } = useVoicePay();
+  const { processVoiceCommand, executePayment, isProcessing, isExecuting, result, executionResult, error: voicePayError } = useVoicePay();
 
   const executeRealPayment = useCallback(async (command: string) => {
     if (!address) {
@@ -120,13 +140,21 @@ export const NuruDemoInterface: React.FC = () => {
       }
     }
 
-    // Execute payment
+    // Execute payment: first process command, then execute
     setCurrentStep("processing");
     try {
-      const audioBlob = new Blob([], { type: 'audio/webm' }); // Empty blob for now
-      const result = await processVoicePayment(command, audioBlob);
+      // Step 1: Process voice command with language support
+      await processVoiceCommand(command, selectedLanguage);
 
-      if (result.success && result.transactionHash) {
+      // Wait a bit for result to be set
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Step 2: Execute payment
+      const audioBlob = new Blob([], { type: 'audio/webm' }); // Empty blob for now
+      await executePayment(audioBlob);
+
+      // Check execution result
+      if (executionResult?.success && executionResult.transactionHash) {
         const newPayment: DemoPayment = {
           id: Date.now().toString(),
           command,
@@ -134,7 +162,7 @@ export const NuruDemoInterface: React.FC = () => {
           currency: currency.toUpperCase(),
           recipient,
           status: "completed",
-          txHash: result.transactionHash,
+          txHash: executionResult.transactionHash,
           timestamp: new Date(),
         };
 
@@ -143,20 +171,23 @@ export const NuruDemoInterface: React.FC = () => {
         setShowSuccess(true);
         refetchBalance();
 
+        // Update voice context for follow-up commands
+        updateAfterPayment(recipient, amount, currency);
+
         // Auto return to demo mode
         setTimeout(() => {
           setCurrentStep("demo");
           setShowSuccess(false);
         }, 4000);
       } else {
-        setErrorMessage(result.error || paymentError || "Payment failed");
+        setErrorMessage(executionResult?.error || voicePayError || "Payment failed");
         setCurrentStep("error");
       }
     } catch (err: any) {
       setErrorMessage(err.message || "Payment execution failed");
       setCurrentStep("error");
     }
-  }, [address, contractInfo, hasEnoughUSDC, usdcBalanceFormatted, approve, approvalError, processVoicePayment, paymentError, refetchBalance]);
+  }, [address, contractInfo, hasEnoughUSDC, usdcBalanceFormatted, approve, approvalError, processVoiceCommand, executePayment, executionResult, voicePayError, refetchBalance, updateAfterPayment, selectedLanguage]);
 
   const handleVoiceDemo = useCallback(() => {
     if (!isSupported) {
@@ -207,6 +238,7 @@ export const NuruDemoInterface: React.FC = () => {
               </div>
             </div>
             <div className="flex items-center gap-3">
+              <LanguageSelector selectedLanguage={selectedLanguage} onLanguageChange={setSelectedLanguage} />
               <div className="text-right hidden sm:block">
                 <div className="text-xs text-gray-600">Base Sepolia</div>
               </div>

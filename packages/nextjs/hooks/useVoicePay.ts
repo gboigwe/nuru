@@ -19,7 +19,7 @@ export interface VoicePayState {
 }
 
 export interface VoicePayActions {
-  processVoiceCommand: (transcript: string) => Promise<void>;
+  processVoiceCommand: (transcript: string, language?: string) => Promise<void>;
   executePayment: (audioBlob: Blob) => Promise<void>;
   cancelPayment: (orderId: number, reason: string) => Promise<void>;
   refreshUserData: () => Promise<void>;
@@ -79,11 +79,11 @@ export const useVoicePay = (): VoicePayState & VoicePayActions => {
   }, [voiceRemittanceContract, walletClient, address, isPaymentExecutorInitialized]);
 
   // Process voice command
-  const processVoiceCommand = useCallback(async (transcript: string) => {
+  const processVoiceCommand = useCallback(async (transcript: string, language: string = 'en') => {
     setState(prev => ({ ...prev, isProcessing: true, error: null }));
 
     try {
-      const result = await voicePayService.processVoiceCommand(transcript);
+      const result = await voicePayService.processVoiceCommand(transcript, language);
       
       setState(prev => ({
         ...prev,
