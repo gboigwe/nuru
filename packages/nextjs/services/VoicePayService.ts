@@ -31,10 +31,10 @@ export class VoicePayService {
   /**
    * Process voice command for payment execution
    */
-  async processVoiceCommand(audioTranscript: string): Promise<VoiceToPaymentResult> {
+  async processVoiceCommand(audioTranscript: string, language: string = 'en'): Promise<VoiceToPaymentResult> {
     try {
-      // Step 1: Extract payment intent from voice
-      const intent = await this.voiceProcessor.extractPaymentIntent(audioTranscript);
+      // Step 1: Extract payment intent from voice with language support
+      const intent = await this.voiceProcessor.extractPaymentIntent(audioTranscript, language);
       
       if (!intent) {
         const suggestions = this.voiceProcessor.getSuggestedCommands(audioTranscript);
