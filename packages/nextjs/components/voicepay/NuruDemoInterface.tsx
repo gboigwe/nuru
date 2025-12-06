@@ -1,8 +1,13 @@
 "use client";
 
 import React, { useState, useCallback, useEffect } from "react";
+import { useAccount } from "wagmi";
 import { CustomConnectButton } from "~~/components/WalletConnect";
 import { useVoiceRecognition } from "~~/hooks/useVoiceRecognition";
+import { useUSDCBalance } from "~~/hooks/useUSDCBalance";
+import { useUSDCApproval } from "~~/hooks/useUSDCApproval";
+import { useVoicePay } from "~~/hooks/useVoicePay";
+import { useDeployedContractInfo } from "~~/hooks/scaffold-eth";
 
 interface DemoPayment {
   id: string;
@@ -23,10 +28,16 @@ const DEMO_COMMANDS = [
 ];
 
 export const NuruDemoInterface: React.FC = () => {
-  const [currentStep, setCurrentStep] = useState<"demo" | "recording" | "processing" | "success">("demo");
+  const { address } = useAccount();
+  const [currentStep, setCurrentStep] = useState<"demo" | "recording" | "approving" | "processing" | "success" | "error">("demo");
   const [demoPayments, setDemoPayments] = useState<DemoPayment[]>([]);
   const [selectedCommand, setSelectedCommand] = useState<string>("");
   const [showSuccess, setShowSuccess] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string>("");
+  const [needsApproval, setNeedsApproval] = useState(false);
+
+  // Get contract info
+  const { data: contractInfo } = useDeployedContractInfo("VoiceRemittance");
 
   // Real voice recognition
   const {
@@ -44,42 +55,108 @@ export const NuruDemoInterface: React.FC = () => {
     interimResults: true,
   });
 
-  const simulatePayment = useCallback((command: string) => {
+  // USDC balance and approval
+  const { usdcBalanceFormatted, ethBalanceFormatted, hasEnoughUSDC, hasEnoughETHForGas, refetch: refetchBalance } = useUSDCBalance(contractInfo?.address);
+  const { approve, approvalStatus, approvalError, isApproving } = useUSDCApproval();
+
+  // Voice payment execution
+  const { processVoicePayment, isProcessing, paymentResult, paymentError } = useVoicePay();
+
+  const executeRealPayment = useCallback(async (command: string) => {
+    if (!address) {
+      setErrorMessage("Please connect your wallet first");
+      setCurrentStep("error");
+      return;
+    }
+
+    if (!contractInfo?.address) {
+      setErrorMessage("Contract not deployed on this network");
+      setCurrentStep("error");
+      return;
+    }
+
     setCurrentStep("processing");
     setSelectedCommand(command);
+    setErrorMessage("");
 
-    // Extract payment details (simple parsing for demo)
+    // Extract payment details
     const amountMatch = command.match(/(\d+(?:\.\d+)?)\s+(cedis|USDC|dollars|ETH)/i);
-    const recipientMatch = command.match(/to\s+([a-zA-Z0-9.-]+\.eth)/i);
+    const recipientMatch = command.match(/to\s+([a-zA-Z0-9.-]+\.(?:eth|base\.eth))/i);
 
     const amount = amountMatch ? amountMatch[1] : "50";
-    const currency = amountMatch ? amountMatch[2].toUpperCase() : "CEDIS";
-    const recipient = recipientMatch ? recipientMatch[1] : "mama.family.eth";
+    const currency = amountMatch ? amountMatch[2].toLowerCase() : "usdc";
+    const recipient = recipientMatch ? recipientMatch[1] : "";
 
-    // Simulate processing delay
-    setTimeout(() => {
-      const newPayment: DemoPayment = {
-        id: Date.now().toString(),
-        command,
-        amount,
-        currency,
-        recipient,
-        status: "completed",
-        txHash: "0x" + Math.random().toString(16).substring(2, 66),
-        timestamp: new Date(),
-      };
+    if (!recipient) {
+      setErrorMessage("Couldn't find recipient address in command");
+      setCurrentStep("error");
+      return;
+    }
 
-      setDemoPayments(prev => [newPayment, ...prev]);
-      setCurrentStep("success");
-      setShowSuccess(true);
+    // Check if it's USDC payment
+    const isUSDC = ['usdc', 'dollars', 'usd'].includes(currency);
 
-      // Auto return to demo mode
-      setTimeout(() => {
-        setCurrentStep("demo");
-        setShowSuccess(false);
-      }, 4000);
-    }, 3000);
-  }, []);
+    if (isUSDC) {
+      // Check USDC balance
+      if (!hasEnoughUSDC(amount)) {
+        setErrorMessage(`Insufficient USDC balance. You have ${usdcBalanceFormatted} USDC`);
+        setCurrentStep("error");
+        return;
+      }
+
+      // Check if approval is needed
+      setCurrentStep("approving");
+      try {
+        const txHash = await approve(contractInfo.address, amount);
+        if (!txHash) {
+          setErrorMessage(approvalError?.message || "USDC approval failed");
+          setCurrentStep("error");
+          return;
+        }
+      } catch (err: any) {
+        setErrorMessage(err.message || "Approval failed");
+        setCurrentStep("error");
+        return;
+      }
+    }
+
+    // Execute payment
+    setCurrentStep("processing");
+    try {
+      const audioBlob = new Blob([], { type: 'audio/webm' }); // Empty blob for now
+      const result = await processVoicePayment(command, audioBlob);
+
+      if (result.success && result.transactionHash) {
+        const newPayment: DemoPayment = {
+          id: Date.now().toString(),
+          command,
+          amount,
+          currency: currency.toUpperCase(),
+          recipient,
+          status: "completed",
+          txHash: result.transactionHash,
+          timestamp: new Date(),
+        };
+
+        setDemoPayments(prev => [newPayment, ...prev]);
+        setCurrentStep("success");
+        setShowSuccess(true);
+        refetchBalance();
+
+        // Auto return to demo mode
+        setTimeout(() => {
+          setCurrentStep("demo");
+          setShowSuccess(false);
+        }, 4000);
+      } else {
+        setErrorMessage(result.error || paymentError || "Payment failed");
+        setCurrentStep("error");
+      }
+    } catch (err: any) {
+      setErrorMessage(err.message || "Payment execution failed");
+      setCurrentStep("error");
+    }
+  }, [address, contractInfo, hasEnoughUSDC, usdcBalanceFormatted, approve, approvalError, processVoicePayment, paymentError, refetchBalance]);
 
   const handleVoiceDemo = useCallback(() => {
     if (!isSupported) {
@@ -95,10 +172,10 @@ export const NuruDemoInterface: React.FC = () => {
   // Process transcript when available
   useEffect(() => {
     if (transcript && !isListening) {
-      // Voice recording complete
-      simulatePayment(transcript);
+      // Voice recording complete - execute real payment
+      executeRealPayment(transcript);
     }
-  }, [transcript, isListening, simulatePayment]);
+  }, [transcript, isListening, executeRealPayment]);
 
   // Update step based on listening state
   useEffect(() => {
@@ -189,17 +266,17 @@ export const NuruDemoInterface: React.FC = () => {
               </>
             )}
 
-            {currentStep === "processing" && (
+            {currentStep === "approving" && (
               <>
                 <div className="relative">
-                  <div className="text-6xl mb-4 animate-spin">🌀</div>
+                  <div className="text-6xl mb-4">💰</div>
                 </div>
-                <h2 className="text-2xl font-bold mb-2" style={{color: '#0E7A4B'}}>Processing Payment...</h2>
-                <p className="text-gray-700 text-lg mb-4">Understanding your command</p>
+                <h2 className="text-2xl font-bold mb-2" style={{color: '#0E7A4B'}}>Approving USDC...</h2>
+                <p className="text-gray-700 text-lg mb-4">Please confirm USDC spending in your wallet</p>
                 <div className="bg-green-50 rounded-xl p-4 mb-4 border border-green-200">
                   <p className="font-mono text-sm" style={{color: '#12B76A'}}>&quot;{selectedCommand}&quot;</p>
                 </div>
-                <div className="text-xs text-gray-600">ENS resolution → Base L2 → Filecoin receipt</div>
+                <div className="text-xs text-gray-600">Step 1 of 2: USDC Approval</div>
                 <div className="flex justify-center mt-4">
                   <div className="flex space-x-2">
                     <div className="w-3 h-3 rounded-full animate-bounce" style={{backgroundColor: '#12B76A'}}></div>
@@ -207,6 +284,44 @@ export const NuruDemoInterface: React.FC = () => {
                     <div className="w-3 h-3 rounded-full animate-bounce" style={{backgroundColor: '#12B76A'}}></div>
                   </div>
                 </div>
+              </>
+            )}
+
+            {currentStep === "processing" && (
+              <>
+                <div className="relative">
+                  <div className="text-6xl mb-4 animate-spin">🌀</div>
+                </div>
+                <h2 className="text-2xl font-bold mb-2" style={{color: '#0E7A4B'}}>Processing Payment...</h2>
+                <p className="text-gray-700 text-lg mb-4">Executing blockchain transaction</p>
+                <div className="bg-green-50 rounded-xl p-4 mb-4 border border-green-200">
+                  <p className="font-mono text-sm" style={{color: '#12B76A'}}>&quot;{selectedCommand}&quot;</p>
+                </div>
+                <div className="text-xs text-gray-600">Basename resolution → BASE Mainnet → USDC transfer</div>
+                <div className="flex justify-center mt-4">
+                  <div className="flex space-x-2">
+                    <div className="w-3 h-3 rounded-full animate-bounce" style={{backgroundColor: '#12B76A'}}></div>
+                    <div className="w-3 h-3 rounded-full animate-bounce" style={{backgroundColor: '#12B76A'}}></div>
+                    <div className="w-3 h-3 rounded-full animate-bounce" style={{backgroundColor: '#12B76A'}}></div>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {currentStep === "error" && (
+              <>
+                <div className="text-6xl mb-4">❌</div>
+                <h2 className="text-2xl font-bold mb-2 text-red-600">Payment Failed</h2>
+                <p className="text-gray-700 text-lg mb-4">An error occurred</p>
+                <div className="bg-red-50 rounded-xl p-4 mb-4 border border-red-200">
+                  <p className="text-sm text-red-700">{errorMessage}</p>
+                </div>
+                <button
+                  onClick={() => setCurrentStep("demo")}
+                  className="mt-4 px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                >
+                  Try Again
+                </button>
               </>
             )}
 
@@ -227,10 +342,27 @@ export const NuruDemoInterface: React.FC = () => {
         {/* Demo Controls */}
         {currentStep === "demo" && (
           <div className="space-y-6">
+            {/* Balance Display */}
+            {address && (
+              <div className="bg-white/90 backdrop-blur-lg rounded-2xl shadow-lg p-4 border border-green-200">
+                <h3 className="text-sm font-semibold mb-3 text-gray-600">Your Balances</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-green-50 rounded-lg p-3">
+                    <div className="text-xs text-gray-600 mb-1">USDC</div>
+                    <div className="text-lg font-bold" style={{color: '#0E7A4B'}}>{usdcBalanceFormatted}</div>
+                  </div>
+                  <div className="bg-blue-50 rounded-lg p-3">
+                    <div className="text-xs text-gray-600 mb-1">ETH (Gas)</div>
+                    <div className="text-lg font-bold text-blue-700">{parseFloat(ethBalanceFormatted).toFixed(4)}</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Voice Demo Button */}
             <button
               onClick={handleVoiceDemo}
-              disabled={!isSupported || isListening}
+              disabled={!isSupported || isListening || !address}
               className="w-full text-white font-bold py-6 px-8 rounded-3xl transition-all transform hover:scale-105 shadow-2xl border-2 disabled:opacity-50 disabled:cursor-not-allowed"
               style={{
                 background: `linear-gradient(135deg, #12B76A 0%, #0E7A4B 100%)`,
@@ -240,9 +372,11 @@ export const NuruDemoInterface: React.FC = () => {
               <div className="flex items-center justify-center space-x-4">
                 <div className="text-3xl animate-pulse">🎤</div>
                 <div>
-                  <div className="text-lg">{isSupported ? 'Start Voice Payment' : 'Voice Not Supported'}</div>
+                  <div className="text-lg">
+                    {!address ? 'Connect Wallet' : !isSupported ? 'Voice Not Supported' : 'Start Voice Payment'}
+                  </div>
                   <div className="text-sm text-green-100">
-                    {isSupported ? 'Tap to speak your command' : 'Please use Chrome or Edge'}
+                    {!address ? 'Connect to make payments' : isSupported ? 'Tap to speak your command' : 'Please use Chrome or Edge'}
                   </div>
                 </div>
               </div>
