@@ -13,12 +13,13 @@ Nuru transforms the way Africans send money across borders. Instead of complex w
 
 ## ✨ Key Features
 
-- **🎤 Voice-First Interface**: Natural language payment commands
+- **🎤 Voice-First Interface**: Real voice recording with MediaRecorder API and Web Speech recognition
 - **🌐 ENS Integration**: Send to human-readable names, not 0x addresses
-- **⚡ Base L2**: Fast, low-cost transactions optimized for remittances  
+- **⚡ Base L2**: Real USDC payments on BASE Mainnet with actual blockchain transactions
 - **📱 Mobile Native**: Built for Africa's smartphone-first population
-- **💾 Voice Receipts**: Immutable proof stored on Filecoin
+- **💾 Voice Receipts**: Immutable proof stored on Filecoin with real CID generation
 - **🔗 Social Verification**: EFP integration for trust and identity
+- **🔒 Production Ready**: No demo mode - all transactions are real and verifiable on Basescan
 
 ## 🎯 Problem We're Solving
 
@@ -125,7 +126,9 @@ No manual configuration needed!
 
 ## 📚 Documentation
 
+- **[Demo to Real Migration Guide](./docs/DEMO_TO_REAL_MIGRATION.md)** - Migration from demo to real payment flow
 - **[Reown Migration Guide](./docs/REOWN_MIGRATION.md)** - Complete guide for the RainbowKit to Reown AppKit migration
+- **[VoicePay Components](./packages/nextjs/components/voicepay/README.md)** - Real payment component documentation
 - **[Scaffold-ETH 2 Docs](https://docs.scaffoldeth.io)** - Technical details and guides
 - **[Reown AppKit Docs](https://docs.reown.com/appkit/react/core/installation)** - Wallet connection documentation
 
