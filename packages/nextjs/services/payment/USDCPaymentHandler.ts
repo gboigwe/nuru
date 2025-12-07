@@ -216,7 +216,14 @@ export class USDCPaymentHandler {
         throw new Error("USDC payment transaction reverted");
       }
 
-      console.log("USDC payment confirmed:", receipt.transactionHash);
+      // Log success with receipt details
+      console.log("USDC payment confirmed:", {
+        transactionHash: receipt.transactionHash,
+        blockNumber: receipt.blockNumber,
+        gasUsed: receipt.gasUsed.toString(),
+        status: receipt.status,
+      });
+
       return receipt.transactionHash;
     } catch (error: any) {
       console.error("Error executing USDC payment:", error);
