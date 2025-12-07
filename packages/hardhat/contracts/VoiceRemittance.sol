@@ -66,8 +66,15 @@ contract VoiceRemittance is ReentrancyGuard, Pausable, Ownable {
     uint256 public constant TIMELOCK_PERIOD = 7 days;
     mapping(bytes32 => uint256) public timelockQueue;
     
+    // Transaction Limits
+    uint256 public maxPaymentPerTx = 10_000 * 10**6; // 10k USDC
+    uint256 public maxPaymentPerDay = 50_000 * 10**6; // 50k USDC
+    mapping(address => uint256) public dailyVolume;
+    mapping(address => uint256) public lastResetDay;
+    
     event FeeChangeQueued(uint256 newFee, uint256 executeTime);
     event FeeChangeExecuted(uint256 oldFee, uint256 newFee);
+    event DailyLimitExceeded(address user, uint256 attempted, uint256 limit);
     
     // Events
     event PaymentInitiated(
@@ -124,6 +131,23 @@ contract VoiceRemittance is ReentrancyGuard, Pausable, Ownable {
     
     modifier onlySender(uint256 _orderId) {
         require(orders[_orderId].sender == msg.sender, "Not the order sender");
+        _;
+    }
+    
+    modifier withinLimits(uint256 _amount) {
+        require(_amount <= maxPaymentPerTx, "Exceeds per-tx limit");
+        
+        if (block.timestamp / 1 days > lastResetDay[msg.sender]) {
+            dailyVolume[msg.sender] = 0;
+            lastResetDay[msg.sender] = block.timestamp / 1 days;
+        }
+        
+        require(
+            dailyVolume[msg.sender] + _amount <= maxPaymentPerDay,
+            "Exceeds daily limit"
+        );
+        
+        dailyVolume[msg.sender] += _amount;
         _;
     }
     
@@ -189,7 +213,7 @@ contract VoiceRemittance is ReentrancyGuard, Pausable, Ownable {
         uint256 _amount,
         string memory _voiceHash,
         string memory _metadata
-    ) external nonReentrant whenNotPaused {
+    ) external nonReentrant whenNotPaused withinLimits(_amount) {
         require(_recipientAddress != address(0), "Invalid recipient address");
         require(_recipientAddress != msg.sender, "Cannot send to yourself");
         require(_amount > 0, "Payment amount must be greater than 0");
