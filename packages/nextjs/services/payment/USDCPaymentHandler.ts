@@ -173,6 +173,8 @@ export class USDCPaymentHandler {
         amount: params.amount,
         amountWei: amountWei.toString(),
         contract: params.contractAddress,
+        voiceHash: params.voiceHash,
+        metadataPreview: params.metadata.substring(0, 100),
       });
 
       // Check balance and allowance before payment
