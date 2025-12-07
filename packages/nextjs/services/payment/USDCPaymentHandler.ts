@@ -1,6 +1,8 @@
 import { type PublicClient, type WalletClient, parseUnits, formatUnits, type Address } from "viem";
 import { ERC20_ABI } from "~~/constants/abis/ERC20_ABI";
 import { CURRENCIES, SupportedCurrency } from "~~/constants/currencies";
+import deployedContracts from "~~/contracts/deployedContracts";
+import { base } from "viem/chains";
 
 export interface USDCPaymentParams {
   from: Address;
