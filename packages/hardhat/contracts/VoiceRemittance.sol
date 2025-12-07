@@ -314,7 +314,7 @@ contract VoiceRemittance is ReentrancyGuard, Pausable, Ownable, AccessControl {
     function completePayment(
         uint256 _orderId,
         address _recipientAddress
-    ) external nonReentrant whenNotPaused orderExists(_orderId) {
+    ) external nonReentrant whenNotPaused orderExists(_orderId) rateLimit {
         PaymentOrder storage order = orders[_orderId];
         require(!order.completed, "Order already completed");
         require(order.status == 0, "Order is not in pending status");
