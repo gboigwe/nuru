@@ -10,6 +10,7 @@ import { TransactionResult } from './TransactionResult';
 import { RealPaymentHistory } from './RealPaymentHistory';
 import { PaymentErrorBoundary } from './PaymentErrorBoundary';
 import { VoiceProcessingState, PaymentProcessingState } from './LoadingState';
+import { NetworkStatusIndicator } from './NetworkStatusIndicator';
 
 export const RealPaymentInterface = () => {
   const { address, isConnected } = useAccount();
@@ -54,6 +55,10 @@ export const RealPaymentInterface = () => {
   return (
     <PaymentErrorBoundary>
       <div className="max-w-4xl mx-auto p-6 space-y-6">
+        <div className="flex justify-end mb-4">
+          <NetworkStatusIndicator />
+        </div>
+        
         <RealBalanceDisplay address={address} />
 
         <VoiceRecorder
