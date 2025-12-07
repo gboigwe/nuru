@@ -62,6 +62,13 @@ contract VoiceRemittance is ReentrancyGuard, Pausable, Ownable {
     uint256 public platformFeePercent = 50; // 0.5% (50/10000)
     uint256 public constant MAX_FEE_PERCENT = 300; // 3% maximum
     
+    // Timelock
+    uint256 public constant TIMELOCK_PERIOD = 7 days;
+    mapping(bytes32 => uint256) public timelockQueue;
+    
+    event FeeChangeQueued(uint256 newFee, uint256 executeTime);
+    event FeeChangeExecuted(uint256 oldFee, uint256 newFee);
+    
     // Events
     event PaymentInitiated(
         uint256 indexed orderId, 
@@ -426,12 +433,30 @@ contract VoiceRemittance is ReentrancyGuard, Pausable, Ownable {
     // Admin Functions
     
     /**
-     * @dev Update platform fee (only owner)
+     * @dev Queue platform fee change (only owner)
      * @param _newFeePercent New fee percentage (in basis points)
      */
-    function updatePlatformFee(uint256 _newFeePercent) external onlyOwner {
+    function queueFeeChange(uint256 _newFeePercent) external onlyOwner {
         require(_newFeePercent <= MAX_FEE_PERCENT, "Fee too high");
+        bytes32 txHash = keccak256(abi.encode('SET_FEE', _newFeePercent));
+        timelockQueue[txHash] = block.timestamp + TIMELOCK_PERIOD;
+        emit FeeChangeQueued(_newFeePercent, timelockQueue[txHash]);
+    }
+    
+    /**
+     * @dev Execute platform fee change after timelock
+     * @param _newFeePercent New fee percentage (in basis points)
+     */
+    function executeFeeChange(uint256 _newFeePercent) external onlyOwner {
+        bytes32 txHash = keccak256(abi.encode('SET_FEE', _newFeePercent));
+        require(timelockQueue[txHash] != 0, "Not queued");
+        require(block.timestamp >= timelockQueue[txHash], "Timelock active");
+        
+        uint256 oldFee = platformFeePercent;
         platformFeePercent = _newFeePercent;
+        delete timelockQueue[txHash];
+        
+        emit FeeChangeExecuted(oldFee, _newFeePercent);
     }
     
     /**
