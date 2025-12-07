@@ -72,9 +72,16 @@ contract VoiceRemittance is ReentrancyGuard, Pausable, Ownable {
     mapping(address => uint256) public dailyVolume;
     mapping(address => uint256) public lastResetDay;
     
+    // Circuit Breaker
+    bool public emergencyShutdown;
+    uint256 public emergencyWithdrawDelay = 3 days;
+    uint256 public pausedAt;
+    
     event FeeChangeQueued(uint256 newFee, uint256 executeTime);
     event FeeChangeExecuted(uint256 oldFee, uint256 newFee);
     event DailyLimitExceeded(address user, uint256 attempted, uint256 limit);
+    event EmergencyShutdown(uint256 timestamp);
+    event EmergencyWithdrawal(uint256 amount);
     
     // Events
     event PaymentInitiated(
@@ -487,6 +494,7 @@ contract VoiceRemittance is ReentrancyGuard, Pausable, Ownable {
      * @dev Pause contract (emergency use)
      */
     function pause() external onlyOwner {
+        pausedAt = block.timestamp;
         _pause();
     }
     
@@ -494,15 +502,35 @@ contract VoiceRemittance is ReentrancyGuard, Pausable, Ownable {
      * @dev Unpause contract
      */
     function unpause() external onlyOwner {
+        require(!emergencyShutdown, "Emergency shutdown active");
         _unpause();
     }
     
     /**
-     * @dev Emergency withdrawal (only owner, when paused)
+     * @dev Trigger emergency shutdown
      */
-    function emergencyWithdraw() external onlyOwner whenPaused {
-        (bool success, ) = owner().call{value: address(this).balance}("");
+    function triggerEmergencyShutdown() external onlyOwner {
+        emergencyShutdown = true;
+        pausedAt = block.timestamp;
+        _pause();
+        emit EmergencyShutdown(block.timestamp);
+    }
+    
+    /**
+     * @dev Emergency withdrawal (only owner, after delay)
+     */
+    function emergencyWithdraw() external onlyOwner {
+        require(emergencyShutdown, "Not in emergency");
+        require(
+            block.timestamp >= pausedAt + emergencyWithdrawDelay,
+            "Wait period active"
+        );
+        
+        uint256 balance = address(this).balance;
+        (bool success, ) = owner().call{value: balance}("");
         require(success, "Emergency withdrawal failed");
+        
+        emit EmergencyWithdrawal(balance);
     }
     
     /**
