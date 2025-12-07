@@ -77,6 +77,10 @@ contract VoiceRemittance is ReentrancyGuard, Pausable, Ownable {
     uint256 public emergencyWithdrawDelay = 3 days;
     uint256 public pausedAt;
     
+    // Rate Limiting
+    mapping(address => uint256) public lastPaymentTime;
+    uint256 public minTimeBetweenPayments = 10 seconds;
+    
     event FeeChangeQueued(uint256 newFee, uint256 executeTime);
     event FeeChangeExecuted(uint256 oldFee, uint256 newFee);
     event DailyLimitExceeded(address user, uint256 attempted, uint256 limit);
@@ -158,6 +162,15 @@ contract VoiceRemittance is ReentrancyGuard, Pausable, Ownable {
         _;
     }
     
+    modifier rateLimit() {
+        require(
+            block.timestamp >= lastPaymentTime[msg.sender] + minTimeBetweenPayments,
+            "Rate limit"
+        );
+        lastPaymentTime[msg.sender] = block.timestamp;
+        _;
+    }
+    
     constructor(address _usdcAddress) Ownable(msg.sender) {
         require(_usdcAddress != address(0), "Invalid USDC address");
         usdcToken = IERC20(_usdcAddress);
@@ -175,7 +188,7 @@ contract VoiceRemittance is ReentrancyGuard, Pausable, Ownable {
         string memory _voiceHash,
         string memory _currency,
         string memory _metadata
-    ) external payable nonReentrant whenNotPaused validPaymentAmount(msg.value) {
+    ) external payable nonReentrant whenNotPaused validPaymentAmount(msg.value) rateLimit {
         require(bytes(_recipientENS).length > 0, "ENS name cannot be empty");
         require(bytes(_voiceHash).length > 0, "Voice hash cannot be empty");
         require(msg.value > 0, "Payment amount must be greater than 0");
@@ -220,7 +233,7 @@ contract VoiceRemittance is ReentrancyGuard, Pausable, Ownable {
         uint256 _amount,
         string memory _voiceHash,
         string memory _metadata
-    ) external nonReentrant whenNotPaused withinLimits(_amount) {
+    ) external nonReentrant whenNotPaused withinLimits(_amount) rateLimit {
         require(_recipientAddress != address(0), "Invalid recipient address");
         require(_recipientAddress != msg.sender, "Cannot send to yourself");
         require(_amount > 0, "Payment amount must be greater than 0");
