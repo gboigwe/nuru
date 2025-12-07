@@ -6,3 +6,4 @@
 
 export * from "./BatchTransactionService";
 export * from "./PaymasterService";
+export * from "./SessionKeysService";
