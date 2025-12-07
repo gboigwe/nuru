@@ -125,6 +125,7 @@ No manual configuration needed!
 
 ## 📚 Documentation
 
+- **[Transaction Monitoring](./packages/nextjs/services/transactions/README.md)** - Transaction monitoring, retry logic, and status polling
 - **[Reown Migration Guide](./docs/REOWN_MIGRATION.md)** - Complete guide for the RainbowKit to Reown AppKit migration
 - **[Scaffold-ETH 2 Docs](https://docs.scaffoldeth.io)** - Technical details and guides
 - **[Reown AppKit Docs](https://docs.reown.com/appkit/react/core/installation)** - Wallet connection documentation
