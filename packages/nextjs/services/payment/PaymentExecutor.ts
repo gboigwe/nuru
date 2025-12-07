@@ -4,6 +4,10 @@ import { voicePayService, ProcessedVoiceCommand } from '../VoicePayService';
 import { synapseFilecoinStorage } from '../storage/SynapseFilecoinStorage';
 import { USDCPaymentHandler } from './USDCPaymentHandler';
 import { CURRENCIES, SupportedCurrency } from '~~/constants/currencies';
+import { retryManager } from '../transactions/RetryManager';
+import { nonceManager } from '../transactions/NonceManager';
+import { gasPriceOracle } from '../transactions/GasPriceOracle';
+import { transactionMonitor } from '../transactions/TransactionMonitor';
 
 /**
  * Payment execution service that integrates with VoiceRemittance smart contract
@@ -52,6 +56,10 @@ export class PaymentExecutor {
     this.contractABI = contractABI;
     
     this.contract = new Contract(contractAddress, contractABI, signer);
+    
+    nonceManager.initialize(provider);
+    gasPriceOracle.initialize(provider);
+    transactionMonitor.initialize(provider);
   }
 
   /**
@@ -182,8 +190,17 @@ export class PaymentExecutor {
         console.log(`Gas price: ${gasPrice.gasPrice?.toString()}`);
         console.log('Transaction submitted:', tx.hash);
 
-        // Wait for transaction confirmation
-        const receipt = await tx.wait();
+        // Wait for transaction confirmation with retry
+        const receipt = await retryManager.executeWithRetry(
+          async () => {
+            const status = await transactionMonitor.pollTransactionStatus(tx.hash, 12, 5000);
+            if (status === 'FAILED' || status === 'TIMEOUT') {
+              throw new Error(`Transaction ${status.toLowerCase()}`);
+            }
+            return await tx.wait();
+          },
+          { maxRetries: 2, baseDelay: 2000 }
+        );
         console.log('Transaction confirmed:', receipt.hash);
 
         // Extract order ID from events

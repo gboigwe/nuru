@@ -1,6 +1,8 @@
 import { type PublicClient, type WalletClient, parseUnits, formatUnits, type Address } from "viem";
 import { ERC20_ABI } from "~~/constants/abis/ERC20_ABI";
 import { CURRENCIES, SupportedCurrency } from "~~/constants/currencies";
+import deployedContracts from "~~/contracts/deployedContracts";
+import { base } from "viem/chains";
 
 export interface USDCPaymentParams {
   from: Address;
@@ -8,6 +10,8 @@ export interface USDCPaymentParams {
   amount: string;
   currency: SupportedCurrency;
   contractAddress: Address;
+  voiceHash: string;
+  metadata: string;
 }
 
 export interface USDCApprovalParams {
@@ -38,6 +42,33 @@ export class USDCPaymentHandler {
     // USDC on BASE Mainnet
     this.usdcAddress = CURRENCIES[SupportedCurrency.USDC].contractAddress as Address;
     this.usdcDecimals = CURRENCIES[SupportedCurrency.USDC].decimals;
+  }
+
+  /**
+   * Helper to create payment parameters with voice metadata
+   */
+  createPaymentParams(
+    from: Address,
+    to: Address,
+    amount: string,
+    voiceHash: string,
+    voiceMetadata: {
+      language?: string;
+      confidence?: number;
+      voiceCommand?: string;
+      timestamp?: number;
+      filecoinCid?: string;
+    }
+  ): USDCPaymentParams {
+    return {
+      from,
+      to,
+      amount,
+      currency: SupportedCurrency.USDC,
+      contractAddress: deployedContracts[base.id].VoiceRemittance.address as Address,
+      voiceHash,
+      metadata: JSON.stringify(voiceMetadata),
+    };
   }
 
   /**
@@ -142,6 +173,8 @@ export class USDCPaymentHandler {
         amount: params.amount,
         amountWei: amountWei.toString(),
         contract: params.contractAddress,
+        voiceHash: params.voiceHash,
+        metadataPreview: params.metadata.substring(0, 100),
       });
 
       // Check balance and allowance before payment
@@ -159,25 +192,15 @@ export class USDCPaymentHandler {
         );
       }
 
-      // Execute payment via contract
-      // Note: The contract must have initiateUSDCPayment or similar function
-      // This will be updated once we have the contract ABI
+      // Get VoiceRemittance contract ABI
+      const voiceRemittanceAbi = deployedContracts[base.id].VoiceRemittance.abi;
+
+      // Execute payment via contract with correct 4-parameter signature
       const hash = await this.walletClient.writeContract({
         address: params.contractAddress,
-        abi: [
-          {
-            inputs: [
-              { name: "recipient", type: "address" },
-              { name: "amount", type: "uint256" },
-            ],
-            name: "initiateUSDCPayment",
-            outputs: [],
-            stateMutability: "nonpayable",
-            type: "function",
-          },
-        ],
+        abi: voiceRemittanceAbi,
         functionName: "initiateUSDCPayment",
-        args: [params.to, amountWei],
+        args: [params.to, amountWei, params.voiceHash, params.metadata],
         account: params.from,
       });
 
@@ -193,7 +216,14 @@ export class USDCPaymentHandler {
         throw new Error("USDC payment transaction reverted");
       }
 
-      console.log("USDC payment confirmed:", receipt.transactionHash);
+      // Log success with receipt details
+      console.log("USDC payment confirmed:", {
+        transactionHash: receipt.transactionHash,
+        blockNumber: receipt.blockNumber,
+        gasUsed: receipt.gasUsed.toString(),
+        status: receipt.status,
+      });
+
       return receipt.transactionHash;
     } catch (error: any) {
       console.error("Error executing USDC payment:", error);
@@ -286,23 +316,13 @@ export class USDCPaymentHandler {
   async estimatePaymentGas(params: USDCPaymentParams): Promise<bigint> {
     try {
       const amountWei = parseUnits(params.amount, this.usdcDecimals);
+      const voiceRemittanceAbi = deployedContracts[base.id].VoiceRemittance.abi;
 
       const gas = await this.publicClient.estimateContractGas({
         address: params.contractAddress,
-        abi: [
-          {
-            inputs: [
-              { name: "recipient", type: "address" },
-              { name: "amount", type: "uint256" },
-            ],
-            name: "initiateUSDCPayment",
-            outputs: [],
-            stateMutability: "nonpayable",
-            type: "function",
-          },
-        ],
+        abi: voiceRemittanceAbi,
         functionName: "initiateUSDCPayment",
-        args: [params.to, amountWei],
+        args: [params.to, amountWei, params.voiceHash, params.metadata],
         account: params.from,
       });
 
@@ -310,7 +330,7 @@ export class USDCPaymentHandler {
     } catch (error) {
       console.error("Error estimating payment gas:", error);
       // Return a default gas estimate if estimation fails
-      return BigInt(100000);
+      return BigInt(150000);
     }
   }
 }

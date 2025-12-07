@@ -126,7 +126,7 @@ No manual configuration needed!
 
 ## 📚 Documentation
 
-- **[Demo to Real Migration Guide](./docs/DEMO_TO_REAL_MIGRATION.md)** - Migration from demo to real payment flow
+- **[Voice Recognition](./packages/nextjs/services/voice/README.md)** - Multi-tier voice recognition with Web Speech API and Whisper
 - **[Reown Migration Guide](./docs/REOWN_MIGRATION.md)** - Complete guide for the RainbowKit to Reown AppKit migration
 - **[VoicePay Components](./packages/nextjs/components/voicepay/README.md)** - Real payment component documentation
 - **[Scaffold-ETH 2 Docs](https://docs.scaffoldeth.io)** - Technical details and guides

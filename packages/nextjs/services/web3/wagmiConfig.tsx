@@ -25,6 +25,7 @@ import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
 import { createAppKit } from "@reown/appkit/react";
 import { Chain, http } from "viem";
 import { mainnet, base } from "viem/chains";
+import { coinbaseWallet } from "wagmi/connectors";
 import {
   type SIWESession,
   type SIWEVerifyMessageArgs,
@@ -97,12 +98,37 @@ const transports = enabledChains.reduce(
 );
 
 /**
+ * Coinbase Smart Wallet Connector
+ *
+ * Enables Coinbase Smart Wallet with:
+ * - Passkey authentication (WebAuthn)
+ * - Seedless, passwordless wallet creation
+ * - Gasless transactions via Paymaster
+ * - Batch transactions (approve + pay in one tx)
+ * - Account abstraction (ERC-4337)
+ *
+ * Preference options:
+ * - 'all': Show both Smart Wallet and Extension options
+ * - 'smartWalletOnly': Force Smart Wallet (best UX for new users)
+ * - 'eoaOnly': Traditional EOA wallets only
+ */
+const smartWalletConnector = coinbaseWallet({
+  appName: appMetadata.name,
+  appLogoUrl: typeof window !== "undefined" ? `${window.location.origin}${appMetadata.icon}` : `${appMetadata.url}${appMetadata.icon}`,
+  preference: process.env.NEXT_PUBLIC_COINBASE_WALLET_PREFERENCE as any || 'all',
+  version: '4', // v4 includes Smart Wallet support
+});
+
+/**
  * Wagmi Adapter for Reown AppKit
  *
  * This adapter bridges Wagmi (React Hooks for Ethereum) with Reown AppKit.
  * Handles all wallet connections, network switching, and account management.
  *
  * SSR enabled for Next.js 15 App Router compatibility.
+ *
+ * Additional Connectors:
+ * - Coinbase Smart Wallet for passkey-based authentication
  */
 // SIWE Configuration
 export const siweConfig = createSIWEConfig({
@@ -173,6 +199,7 @@ export const wagmiAdapter = new WagmiAdapter({
   projectId,
   ssr: true,
   transports,
+  connectors: [smartWalletConnector],
 });
 
 /**

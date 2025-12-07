@@ -1,108 +1,92 @@
-"use client";
+import { useState, useCallback, useRef } from 'react';
+import { voiceRecognitionService, UnifiedVoiceResult } from '~/services/voice/VoiceRecognitionService';
 
-import { useState, useCallback, useRef, useEffect } from 'react';
-import {
-  webSpeechRecognition,
-  VoiceRecognitionResult,
-  VoiceRecognitionOptions,
-} from '~~/services/voice/WebSpeechRecognition';
-
-/**
- * useVoiceRecognition Hook
- *
- * React hook for voice recognition using Web Speech API
- */
-
-export interface UseVoiceRecognitionReturn {
-  transcript: string;
-  interimTranscript: string;
-  isListening: boolean;
-  isSupported: boolean;
-  confidence: number | null;
-  error: string | null;
-  startListening: () => void;
-  stopListening: () => void;
-  resetTranscript: () => void;
-}
-
-export function useVoiceRecognition(
-  options: VoiceRecognitionOptions = {},
-): UseVoiceRecognitionReturn {
+export const useVoiceRecognition = () => {
+  const [isRecording, setIsRecording] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [transcript, setTranscript] = useState('');
-  const [interimTranscript, setInterimTranscript] = useState('');
-  const [isListening, setIsListening] = useState(false);
-  const [confidence, setConfidence] = useState<number | null>(null);
+  const [confidence, setConfidence] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const [isSupported] = useState(() => webSpeechRecognition.isSupported());
+  const [method, setMethod] = useState<'web-speech' | 'whisper' | null>(null);
 
-  const finalTranscriptRef = useRef('');
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
 
-  const handleResult = useCallback((result: VoiceRecognitionResult) => {
-    if (result.isFinal) {
-      // Final result
-      const newTranscript = finalTranscriptRef.current + ' ' + result.transcript;
-      finalTranscriptRef.current = newTranscript.trim();
-      setTranscript(newTranscript.trim());
-      setInterimTranscript('');
-      setConfidence(result.confidence);
-    } else {
-      // Interim result
-      setInterimTranscript(result.transcript);
+  const startRecording = useCallback(async () => {
+    try {
+      setError(null);
+      setTranscript('');
+      setConfidence(0);
+
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: 'audio/webm;codecs=opus'
+      });
+
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        setIsProcessing(true);
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+
+        try {
+          const result: UnifiedVoiceResult = await voiceRecognitionService.recognizeFromAudio(audioBlob);
+
+          if (result.success) {
+            setTranscript(result.transcript);
+            setConfidence(result.confidence);
+            setMethod(result.method);
+          } else {
+            setError(result.error || 'Recognition failed');
+          }
+        } catch (err) {
+          setError(err instanceof Error ? err.message : 'Unknown error');
+        } finally {
+          setIsProcessing(false);
+          stream.getTracks().forEach(track => track.stop());
+        }
+      };
+
+      mediaRecorder.start(100);
+      setIsRecording(true);
+
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Microphone access denied');
+      setIsRecording(false);
     }
   }, []);
 
-  const handleError = useCallback((errorMessage: string) => {
-    setError(errorMessage);
-    setIsListening(false);
-  }, []);
-
-  const startListening = useCallback(() => {
-    if (!isSupported) {
-      setError('Voice recognition is not supported in your browser');
-      return;
+  const stopRecording = useCallback(() => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
     }
-
-    setError(null);
-    finalTranscriptRef.current = '';
-    setTranscript('');
-    setInterimTranscript('');
-    setConfidence(null);
-
-    webSpeechRecognition.startListening(handleResult, handleError, options);
-    setIsListening(true);
-  }, [isSupported, options, handleResult, handleError]);
-
-  const stopListening = useCallback(() => {
-    webSpeechRecognition.stopListening();
-    setIsListening(false);
   }, []);
 
-  const resetTranscript = useCallback(() => {
-    finalTranscriptRef.current = '';
+  const reset = useCallback(() => {
     setTranscript('');
-    setInterimTranscript('');
-    setConfidence(null);
+    setConfidence(0);
     setError(null);
+    setMethod(null);
   }, []);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (isListening) {
-        webSpeechRecognition.abort();
-      }
-    };
-  }, [isListening]);
 
   return {
+    isRecording,
+    isProcessing,
     transcript,
-    interimTranscript,
-    isListening,
-    isSupported,
     confidence,
     error,
-    startListening,
-    stopListening,
-    resetTranscript,
+    method,
+    startRecording,
+    stopRecording,
+    reset,
+    isSupported: voiceRecognitionService.isWebSpeechSupported(),
   };
-}
+};
