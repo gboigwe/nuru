@@ -280,23 +280,13 @@ export class USDCPaymentHandler {
   async estimatePaymentGas(params: USDCPaymentParams): Promise<bigint> {
     try {
       const amountWei = parseUnits(params.amount, this.usdcDecimals);
+      const voiceRemittanceAbi = deployedContracts[base.id].VoiceRemittance.abi;
 
       const gas = await this.publicClient.estimateContractGas({
         address: params.contractAddress,
-        abi: [
-          {
-            inputs: [
-              { name: "recipient", type: "address" },
-              { name: "amount", type: "uint256" },
-            ],
-            name: "initiateUSDCPayment",
-            outputs: [],
-            stateMutability: "nonpayable",
-            type: "function",
-          },
-        ],
+        abi: voiceRemittanceAbi,
         functionName: "initiateUSDCPayment",
-        args: [params.to, amountWei],
+        args: [params.to, amountWei, params.voiceHash, params.metadata],
         account: params.from,
       });
 
@@ -304,7 +294,7 @@ export class USDCPaymentHandler {
     } catch (error) {
       console.error("Error estimating payment gas:", error);
       // Return a default gas estimate if estimation fails
-      return BigInt(100000);
+      return BigInt(150000);
     }
   }
 }
