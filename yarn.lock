@@ -968,7 +968,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@coinbase/onchainkit@npm:^0.38.19":
+"@coinbase/onchainkit@npm:0.38.19, @coinbase/onchainkit@npm:^0.38.19":
   version: 0.38.19
   resolution: "@coinbase/onchainkit@npm:0.38.19"
   dependencies:
@@ -4922,6 +4922,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@se-2/nextjs@workspace:packages/nextjs"
   dependencies:
+    "@coinbase/onchainkit": 0.38.19
     "@coinbase/wallet-sdk": ~4.3.6
     "@filoz/synapse-sdk": ^0.24.1
     "@heroicons/react": ^2.1.5
