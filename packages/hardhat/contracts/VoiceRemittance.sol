@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Pausable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**
@@ -18,7 +19,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
  * - Reputation tracking for EFP integration
  * - Secure escrow mechanism
  */
-contract VoiceRemittance is ReentrancyGuard, Pausable, Ownable {
+contract VoiceRemittance is ReentrancyGuard, Pausable, Ownable, AccessControl {
     uint256 private _orderCounter;
 
     // USDC Token Interface
@@ -80,6 +81,10 @@ contract VoiceRemittance is ReentrancyGuard, Pausable, Ownable {
     // Rate Limiting
     mapping(address => uint256) public lastPaymentTime;
     uint256 public minTimeBetweenPayments = 10 seconds;
+    
+    // Access Control Roles
+    bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
+    bytes32 public constant OPERATOR_ROLE = keccak256("OPERATOR_ROLE");
     
     event FeeChangeQueued(uint256 newFee, uint256 executeTime);
     event FeeChangeExecuted(uint256 oldFee, uint256 newFee);
@@ -174,6 +179,10 @@ contract VoiceRemittance is ReentrancyGuard, Pausable, Ownable {
     constructor(address _usdcAddress) Ownable(msg.sender) {
         require(_usdcAddress != address(0), "Invalid USDC address");
         usdcToken = IERC20(_usdcAddress);
+        
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(ADMIN_ROLE, msg.sender);
+        _grantRole(OPERATOR_ROLE, msg.sender);
     }
     
     /**
