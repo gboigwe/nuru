@@ -8,3 +8,4 @@ export * from "./IPFSStorageService";
 export * from "./Web3StorageService";
 export * from "./StorageRedundancyService";
 export * from "./ReceiptRetrievalService";
+export * from "./ReceiptVerificationService";
