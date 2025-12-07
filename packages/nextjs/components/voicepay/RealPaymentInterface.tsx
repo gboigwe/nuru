@@ -9,6 +9,7 @@ import { PaymentConfirmationModal } from './PaymentConfirmationModal';
 import { TransactionResult } from './TransactionResult';
 import { RealPaymentHistory } from './RealPaymentHistory';
 import { PaymentErrorBoundary } from './PaymentErrorBoundary';
+import { VoiceProcessingState, PaymentProcessingState } from './LoadingState';
 
 export const RealPaymentInterface = () => {
   const { address, isConnected } = useAccount();
@@ -59,6 +60,10 @@ export const RealPaymentInterface = () => {
           onRecordingComplete={handleRecordingComplete}
           isProcessing={isProcessing}
         />
+
+        {isProcessing && <VoiceProcessingState />}
+
+        {isExecuting && <PaymentProcessingState />}
 
         {result && result.success && result.data && audioBlob && (
           <PaymentConfirmationModal
