@@ -125,6 +125,7 @@ No manual configuration needed!
 
 ## 📚 Documentation
 
+- **[Voice Recognition](./packages/nextjs/services/voice/README.md)** - Multi-tier voice recognition with Web Speech API and Whisper
 - **[Reown Migration Guide](./docs/REOWN_MIGRATION.md)** - Complete guide for the RainbowKit to Reown AppKit migration
 - **[Scaffold-ETH 2 Docs](https://docs.scaffoldeth.io)** - Technical details and guides
 - **[Reown AppKit Docs](https://docs.reown.com/appkit/react/core/installation)** - Wallet connection documentation
