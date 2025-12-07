@@ -45,6 +45,33 @@ export class USDCPaymentHandler {
   }
 
   /**
+   * Helper to create payment parameters with voice metadata
+   */
+  createPaymentParams(
+    from: Address,
+    to: Address,
+    amount: string,
+    voiceHash: string,
+    voiceMetadata: {
+      language?: string;
+      confidence?: number;
+      voiceCommand?: string;
+      timestamp?: number;
+      filecoinCid?: string;
+    }
+  ): USDCPaymentParams {
+    return {
+      from,
+      to,
+      amount,
+      currency: SupportedCurrency.USDC,
+      contractAddress: deployedContracts[base.id].VoiceRemittance.address as Address,
+      voiceHash,
+      metadata: JSON.stringify(voiceMetadata),
+    };
+  }
+
+  /**
    * Check USDC balance and allowance for a given address
    */
   async checkBalance(owner: Address, spender: Address, requiredAmount: string): Promise<USDCBalanceInfo> {
