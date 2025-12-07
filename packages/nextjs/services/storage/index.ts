@@ -5,3 +5,4 @@
  */
 
 export * from "./IPFSStorageService";
+export * from "./Web3StorageService";
