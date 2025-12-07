@@ -199,8 +199,11 @@ contract VoiceRemittance is ReentrancyGuard, Pausable, Ownable, AccessControl {
         string memory _metadata
     ) external payable nonReentrant whenNotPaused validPaymentAmount(msg.value) rateLimit {
         require(bytes(_recipientENS).length > 0, "ENS name cannot be empty");
+        require(bytes(_recipientENS).length <= 256, "ENS name too long");
         require(bytes(_voiceHash).length > 0, "Voice hash cannot be empty");
+        require(bytes(_voiceHash).length <= 128, "Voice hash too long");
         require(msg.value > 0, "Payment amount must be greater than 0");
+        require(msg.sender != address(0), "Invalid sender");
         
         _orderCounter++;
         uint256 orderId = _orderCounter;
@@ -245,8 +248,11 @@ contract VoiceRemittance is ReentrancyGuard, Pausable, Ownable, AccessControl {
     ) external nonReentrant whenNotPaused withinLimits(_amount) rateLimit {
         require(_recipientAddress != address(0), "Invalid recipient address");
         require(_recipientAddress != msg.sender, "Cannot send to yourself");
+        require(_recipientAddress != address(this), "Cannot send to contract");
         require(_amount > 0, "Payment amount must be greater than 0");
+        require(_amount >= 1000, "Amount too small"); // Min 0.001 USDC
         require(bytes(_voiceHash).length > 0, "Voice hash cannot be empty");
+        require(bytes(_voiceHash).length <= 128, "Voice hash too long");
 
         // Transfer USDC from sender to this contract
         require(
