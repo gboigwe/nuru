@@ -6,3 +6,4 @@
 
 export * from "./IPFSStorageService";
 export * from "./Web3StorageService";
+export * from "./StorageRedundancyService";
