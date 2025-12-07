@@ -10,7 +10,7 @@
  */
 
 import { SupportedCurrency, CURRENCIES } from '~~/constants/currencies';
-import { chainlinkPriceFeed } from './ChainlinkPriceFeed';
+import { chainlinkPriceFeed, CHAINLINK_PRICE_FEEDS } from './ChainlinkPriceFeed';
 
 /**
  * Exchange rate data structure
@@ -39,8 +39,10 @@ export interface ConversionResult {
 class CurrencyConverterService {
   private cache: Map<string, ExchangeRate> = new Map();
   private readonly CACHE_DURATION = 60 * 1000; // 1 minute for exchange rates
+  private readonly CHAINLINK_CACHE_DURATION = 30 * 1000; // 30 seconds for Chainlink (more frequent updates)
   private readonly API_RATE_LIMIT_DELAY = 1000; // 1 second between API calls
   private lastApiCall = 0;
+  private priceValidationEnabled = true; // Enable price validation by default
 
   /**
    * Convert amount from one currency to another
@@ -225,9 +227,17 @@ class CurrencyConverterService {
     // Try Chainlink first for ETH
     if (currency === SupportedCurrency.ETH) {
       try {
-        const price = await chainlinkPriceFeed.getETHPrice();
-        console.log(`✅ Chainlink ETH/USD price: $${price}`);
-        return price;
+        const priceFeedData = await chainlinkPriceFeed.getLatestPrice(
+          CHAINLINK_PRICE_FEEDS['ETH/USD']
+        );
+
+        // Validate price feed data
+        if (this.priceValidationEnabled && !chainlinkPriceFeed.validatePriceFeed(priceFeedData)) {
+          throw new Error('Price feed validation failed');
+        }
+
+        console.log(`✅ Chainlink ETH/USD price: $${priceFeedData.price} (updated: ${new Date(priceFeedData.updatedAt * 1000).toISOString()})`);
+        return priceFeedData.price;
       } catch (error) {
         console.warn('⚠️ Chainlink price feed failed, falling back to API:', error);
       }
@@ -334,15 +344,22 @@ class CurrencyConverterService {
 
   /**
    * Get cached exchange rate if still valid
+   * Uses different cache durations based on source
    */
   private getCachedRate(cacheKey: string): ExchangeRate | null {
     const cached = this.cache.get(cacheKey);
 
-    if (cached && Date.now() - cached.timestamp < this.CACHE_DURATION) {
-      return { ...cached, source: 'cache' };
-    }
-
     if (cached) {
+      // Use shorter cache for Chainlink prices (more fresh data)
+      const cacheDuration = cached.source === 'chainlink'
+        ? this.CHAINLINK_CACHE_DURATION
+        : this.CACHE_DURATION;
+
+      if (Date.now() - cached.timestamp < cacheDuration) {
+        return { ...cached, source: 'cache' };
+      }
+
+      // Expired - remove from cache
       this.cache.delete(cacheKey);
     }
 
