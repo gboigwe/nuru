@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Pausable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**
@@ -18,7 +19,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
  * - Reputation tracking for EFP integration
  * - Secure escrow mechanism
  */
-contract VoiceRemittance is ReentrancyGuard, Pausable, Ownable {
+contract VoiceRemittance is ReentrancyGuard, Pausable, Ownable, AccessControl {
     uint256 private _orderCounter;
 
     // USDC Token Interface
@@ -61,6 +62,35 @@ contract VoiceRemittance is ReentrancyGuard, Pausable, Ownable {
     uint256 public constant MIN_PAYMENT_AMOUNT = 0.001 ether;
     uint256 public platformFeePercent = 50; // 0.5% (50/10000)
     uint256 public constant MAX_FEE_PERCENT = 300; // 3% maximum
+    
+    // Timelock
+    uint256 public constant TIMELOCK_PERIOD = 7 days;
+    mapping(bytes32 => uint256) public timelockQueue;
+    
+    // Transaction Limits
+    uint256 public maxPaymentPerTx = 10_000 * 10**6; // 10k USDC
+    uint256 public maxPaymentPerDay = 50_000 * 10**6; // 50k USDC
+    mapping(address => uint256) public dailyVolume;
+    mapping(address => uint256) public lastResetDay;
+    
+    // Circuit Breaker
+    bool public emergencyShutdown;
+    uint256 public emergencyWithdrawDelay = 3 days;
+    uint256 public pausedAt;
+    
+    // Rate Limiting
+    mapping(address => uint256) public lastPaymentTime;
+    uint256 public minTimeBetweenPayments = 10 seconds;
+    
+    // Access Control Roles
+    bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
+    bytes32 public constant OPERATOR_ROLE = keccak256("OPERATOR_ROLE");
+    
+    event FeeChangeQueued(uint256 newFee, uint256 executeTime);
+    event FeeChangeExecuted(uint256 oldFee, uint256 newFee);
+    event DailyLimitExceeded(address user, uint256 attempted, uint256 limit);
+    event EmergencyShutdown(uint256 timestamp);
+    event EmergencyWithdrawal(uint256 amount);
     
     // Events
     event PaymentInitiated(
@@ -120,9 +150,39 @@ contract VoiceRemittance is ReentrancyGuard, Pausable, Ownable {
         _;
     }
     
+    modifier withinLimits(uint256 _amount) {
+        require(_amount <= maxPaymentPerTx, "Exceeds per-tx limit");
+        
+        if (block.timestamp / 1 days > lastResetDay[msg.sender]) {
+            dailyVolume[msg.sender] = 0;
+            lastResetDay[msg.sender] = block.timestamp / 1 days;
+        }
+        
+        require(
+            dailyVolume[msg.sender] + _amount <= maxPaymentPerDay,
+            "Exceeds daily limit"
+        );
+        
+        dailyVolume[msg.sender] += _amount;
+        _;
+    }
+    
+    modifier rateLimit() {
+        require(
+            block.timestamp >= lastPaymentTime[msg.sender] + minTimeBetweenPayments,
+            "Rate limit"
+        );
+        lastPaymentTime[msg.sender] = block.timestamp;
+        _;
+    }
+    
     constructor(address _usdcAddress) Ownable(msg.sender) {
         require(_usdcAddress != address(0), "Invalid USDC address");
         usdcToken = IERC20(_usdcAddress);
+        
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(ADMIN_ROLE, msg.sender);
+        _grantRole(OPERATOR_ROLE, msg.sender);
     }
     
     /**
@@ -137,10 +197,13 @@ contract VoiceRemittance is ReentrancyGuard, Pausable, Ownable {
         string memory _voiceHash,
         string memory _currency,
         string memory _metadata
-    ) external payable nonReentrant whenNotPaused validPaymentAmount(msg.value) {
+    ) external payable nonReentrant whenNotPaused validPaymentAmount(msg.value) rateLimit {
         require(bytes(_recipientENS).length > 0, "ENS name cannot be empty");
+        require(bytes(_recipientENS).length <= 256, "ENS name too long");
         require(bytes(_voiceHash).length > 0, "Voice hash cannot be empty");
+        require(bytes(_voiceHash).length <= 128, "Voice hash too long");
         require(msg.value > 0, "Payment amount must be greater than 0");
+        require(msg.sender != address(0), "Invalid sender");
         
         _orderCounter++;
         uint256 orderId = _orderCounter;
@@ -182,11 +245,14 @@ contract VoiceRemittance is ReentrancyGuard, Pausable, Ownable {
         uint256 _amount,
         string memory _voiceHash,
         string memory _metadata
-    ) external nonReentrant whenNotPaused {
+    ) external nonReentrant whenNotPaused withinLimits(_amount) rateLimit {
         require(_recipientAddress != address(0), "Invalid recipient address");
         require(_recipientAddress != msg.sender, "Cannot send to yourself");
+        require(_recipientAddress != address(this), "Cannot send to contract");
         require(_amount > 0, "Payment amount must be greater than 0");
+        require(_amount >= 1000, "Amount too small"); // Min 0.001 USDC
         require(bytes(_voiceHash).length > 0, "Voice hash cannot be empty");
+        require(bytes(_voiceHash).length <= 128, "Voice hash too long");
 
         // Transfer USDC from sender to this contract
         require(
@@ -254,7 +320,7 @@ contract VoiceRemittance is ReentrancyGuard, Pausable, Ownable {
     function completePayment(
         uint256 _orderId,
         address _recipientAddress
-    ) external nonReentrant whenNotPaused orderExists(_orderId) {
+    ) external nonReentrant whenNotPaused orderExists(_orderId) rateLimit {
         PaymentOrder storage order = orders[_orderId];
         require(!order.completed, "Order already completed");
         require(order.status == 0, "Order is not in pending status");
@@ -426,18 +492,37 @@ contract VoiceRemittance is ReentrancyGuard, Pausable, Ownable {
     // Admin Functions
     
     /**
-     * @dev Update platform fee (only owner)
+     * @dev Queue platform fee change (only owner)
      * @param _newFeePercent New fee percentage (in basis points)
      */
-    function updatePlatformFee(uint256 _newFeePercent) external onlyOwner {
+    function queueFeeChange(uint256 _newFeePercent) external onlyOwner {
         require(_newFeePercent <= MAX_FEE_PERCENT, "Fee too high");
+        bytes32 txHash = keccak256(abi.encode('SET_FEE', _newFeePercent));
+        timelockQueue[txHash] = block.timestamp + TIMELOCK_PERIOD;
+        emit FeeChangeQueued(_newFeePercent, timelockQueue[txHash]);
+    }
+    
+    /**
+     * @dev Execute platform fee change after timelock
+     * @param _newFeePercent New fee percentage (in basis points)
+     */
+    function executeFeeChange(uint256 _newFeePercent) external onlyOwner {
+        bytes32 txHash = keccak256(abi.encode('SET_FEE', _newFeePercent));
+        require(timelockQueue[txHash] != 0, "Not queued");
+        require(block.timestamp >= timelockQueue[txHash], "Timelock active");
+        
+        uint256 oldFee = platformFeePercent;
         platformFeePercent = _newFeePercent;
+        delete timelockQueue[txHash];
+        
+        emit FeeChangeExecuted(oldFee, _newFeePercent);
     }
     
     /**
      * @dev Pause contract (emergency use)
      */
     function pause() external onlyOwner {
+        pausedAt = block.timestamp;
         _pause();
     }
     
@@ -445,15 +530,35 @@ contract VoiceRemittance is ReentrancyGuard, Pausable, Ownable {
      * @dev Unpause contract
      */
     function unpause() external onlyOwner {
+        require(!emergencyShutdown, "Emergency shutdown active");
         _unpause();
     }
     
     /**
-     * @dev Emergency withdrawal (only owner, when paused)
+     * @dev Trigger emergency shutdown
      */
-    function emergencyWithdraw() external onlyOwner whenPaused {
-        (bool success, ) = owner().call{value: address(this).balance}("");
+    function triggerEmergencyShutdown() external onlyOwner {
+        emergencyShutdown = true;
+        pausedAt = block.timestamp;
+        _pause();
+        emit EmergencyShutdown(block.timestamp);
+    }
+    
+    /**
+     * @dev Emergency withdrawal (only owner, after delay)
+     */
+    function emergencyWithdraw() external onlyOwner {
+        require(emergencyShutdown, "Not in emergency");
+        require(
+            block.timestamp >= pausedAt + emergencyWithdrawDelay,
+            "Wait period active"
+        );
+        
+        uint256 balance = address(this).balance;
+        (bool success, ) = owner().call{value: balance}("");
         require(success, "Emergency withdrawal failed");
+        
+        emit EmergencyWithdrawal(balance);
     }
     
     /**

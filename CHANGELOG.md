@@ -4,48 +4,46 @@ All notable changes to Nuru will be documented in this file.
 
 ## [Unreleased]
 
-### Added - Issue #74: Transaction Monitoring, Status Polling, and Retry Logic
+### Added - Issue #68: Real-Time Voice Recognition with Web Speech API and Whisper
 
 #### Services
-- `TransactionMonitor` - Poll transaction status with configurable intervals
-- `RetryManager` - Exponential backoff retry logic for failed operations
-- `NonceManager` - Track and manage transaction nonces
-- `GasPriceOracle` - Calculate optimal gas prices with EIP-1559 support
-- `TransactionQueue` - Queue transactions for sequential execution
-- `StuckTransactionDetector` - Identify transactions stuck in mempool
-- `TransactionReplacer` - Speed up or cancel pending transactions
+- `WebSpeechRecognition` - Enhanced with VAD and confidence scoring
+- `WhisperRecognition` - OpenAI Whisper API integration with retry
+- `VoiceRecognitionService` - Unified service with automatic fallback
+- Whisper API endpoint at `/api/transcribe` with rate limiting
 
 #### Components
-- `TransactionMonitor` - Real-time transaction status UI
-- `TransactionList` - Display multiple monitored transactions
+- `EnhancedVoiceRecorder` - Production-ready voice recorder
+- `VoiceWaveform` - Visual feedback during recording
+- `LanguageSelector` - Multi-language selection UI
 
 #### Hooks
-- `useTransactionMonitor` - React hook for transaction monitoring
+- `useVoiceRecognition` - React hook for voice recognition
 
 #### Features
-- Transaction status polling every 5 seconds
-- Automatic retry with exponential backoff (max 3 attempts)
-- Nonce conflict prevention
-- Gas price optimization with caching
-- Stuck transaction detection (5+ minutes)
-- Transaction replacement (speed-up with 10% higher gas)
-- Transaction cancellation
-- Confirmation progress tracking
-- Real-time UI updates
+- Multi-tier recognition (Web Speech → Whisper)
+- Voice Activity Detection with 2s silence timeout
+- Confidence threshold validation (0.5 minimum)
+- Multi-language support (10 languages including African)
+- Real-time waveform visualization
+- Rate limiting (10 requests/minute)
+- Automatic fallback on errors
+- Retry logic with exponential backoff
 
-#### Integration
-- Integrated retry logic into PaymentExecutor
-- Initialize transaction services on PaymentExecutor init
-- Poll transaction status before confirmation
+#### Languages Supported
+- English (US, UK, Nigeria, Ghana, Kenya)
+- Hausa, Yoruba, Igbo (Nigeria)
+- Swahili (Kenya)
+- French
 
 #### Documentation
-- Transaction services README
-- Transaction components README
-- Usage examples and integration guides
+- Comprehensive voice services README
+- Environment variable configuration
+- Usage examples and API documentation
 
 ---
 
 **Completed by:** Amazon Q  
 **Date:** 2025  
-**Total Commits:** 17  
+**Total Commits:** 14  
 **Status:** ✅ Ready for Review

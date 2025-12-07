@@ -1,0 +1,222 @@
+"""
+The Graph Schema for Nuru Voice Payment System
+Indexes VoiceRemittance contract events on BASE Mainnet
+"""
+
+"""
+Payment entity - represents a single voice payment transaction
+"""
+type Payment @entity {
+  "Unique identifier - orderId from contract"
+  id: ID!
+
+  "Order ID from contract"
+  orderId: BigInt!
+
+  "Sender wallet address"
+  sender: Bytes!
+
+  "Recipient wallet address"
+  recipient: Bytes!
+
+  "Recipient ENS name (if resolved)"
+  ensName: String
+
+  "Recipient Basename (if resolved)"
+  basename: String
+
+  "Payment amount in wei"
+  amount: BigInt!
+
+  "Currency type (USDC, ETH, etc.)"
+  currency: String!
+
+  "Platform fee in wei"
+  platformFee: BigInt!
+
+  "Net amount after fee"
+  netAmount: BigInt!
+
+  "IPFS hash of voice recording"
+  voiceHash: String!
+
+  "Payment metadata JSON"
+  metadata: String!
+
+  "Payment status"
+  status: PaymentStatus!
+
+  "Timestamp when payment was initiated"
+  initiatedAt: BigInt!
+
+  "Timestamp when payment was completed"
+  completedAt: BigInt
+
+  "Timestamp when payment was cancelled"
+  cancelledAt: BigInt
+
+  "Transaction hash"
+  transactionHash: Bytes!
+
+  "Block number"
+  blockNumber: BigInt!
+
+  "Gas used for transaction"
+  gasUsed: BigInt
+
+  "Cancellation reason (if cancelled)"
+  cancellationReason: String
+
+  "Sender user entity"
+  senderUser: User!
+
+  "Recipient user entity"
+  recipientUser: User!
+}
+
+"""
+Payment status enum
+"""
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+  DISPUTED
+}
+
+"""
+User entity - represents a wallet address with aggregated stats
+"""
+type User @entity {
+  "Wallet address"
+  id: ID!
+
+  "Wallet address (bytes)"
+  address: Bytes!
+
+  "Total amount sent in wei"
+  totalSent: BigInt!
+
+  "Total amount received in wei"
+  totalReceived: BigInt!
+
+  "Number of payments sent"
+  paymentsSentCount: Int!
+
+  "Number of payments received"
+  paymentsReceivedCount: Int!
+
+  "Payments sent by this user"
+  paymentsSent: [Payment!]! @derivedFrom(field: "senderUser")
+
+  "Payments received by this user"
+  paymentsReceived: [Payment!]! @derivedFrom(field: "recipientUser")
+
+  "User reputation score (0-1000)"
+  reputation: BigInt!
+
+  "Whether user is verified"
+  isVerified: Boolean!
+
+  "First transaction timestamp"
+  firstTransactionAt: BigInt!
+
+  "Last transaction timestamp"
+  lastTransactionAt: BigInt!
+
+  "ENS name (if resolved)"
+  ensName: String
+
+  "Basename (if resolved)"
+  basename: String
+}
+
+"""
+Daily statistics entity - aggregated daily metrics
+"""
+type DailyStat @entity {
+  "ID format: YYYY-MM-DD (date string)"
+  id: ID!
+
+  "Unix timestamp for the day (midnight UTC)"
+  date: BigInt!
+
+  "Total volume in wei for the day"
+  totalVolume: BigInt!
+
+  "Total number of payments"
+  totalPayments: Int!
+
+  "Number of unique senders"
+  uniqueSenders: Int!
+
+  "Number of unique recipients"
+  uniqueRecipients: Int!
+
+  "Average payment amount"
+  averageAmount: BigInt!
+
+  "Total fees collected"
+  totalFees: BigInt!
+
+  "Number of completed payments"
+  completedPayments: Int!
+
+  "Number of cancelled payments"
+  cancelledPayments: Int!
+}
+
+"""
+Global protocol statistics
+"""
+type ProtocolStat @entity {
+  "Singleton ID (always '1')"
+  id: ID!
+
+  "Total volume all-time in wei"
+  totalVolumeAllTime: BigInt!
+
+  "Total number of payments all-time"
+  totalPaymentsAllTime: Int!
+
+  "Total fees collected all-time"
+  totalFeesAllTime: BigInt!
+
+  "Total number of unique users"
+  totalUniqueUsers: Int!
+
+  "Total completed payments"
+  totalCompletedPayments: Int!
+
+  "Total cancelled payments"
+  totalCancelledPayments: Int!
+
+  "Average payment amount"
+  averagePaymentAmount: BigInt!
+
+  "Last updated timestamp"
+  lastUpdated: BigInt!
+}
+
+"""
+Currency statistics - tracks metrics per currency
+"""
+type CurrencyStat @entity {
+  "Currency code (e.g., 'USDC', 'ETH')"
+  id: ID!
+
+  "Currency code"
+  currency: String!
+
+  "Total volume for this currency"
+  totalVolume: BigInt!
+
+  "Total number of payments"
+  totalPayments: Int!
+
+  "Average payment amount"
+  averageAmount: BigInt!
+
+  "Last updated timestamp"
+  lastUpdated: BigInt!
+}
