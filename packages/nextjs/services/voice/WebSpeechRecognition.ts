@@ -22,6 +22,9 @@ export interface VoiceRecognitionOptions {
   continuous?: boolean;
   interimResults?: boolean;
   maxAlternatives?: number;
+  enableVAD?: boolean;
+  silenceTimeout?: number;
+  confidenceThreshold?: number;
 }
 
 export type VoiceRecognitionCallback = (result: VoiceRecognitionResult) => void;
@@ -31,6 +34,9 @@ class WebSpeechRecognitionService {
   private recognition: any | null = null;
   private isListening = false;
   private isBrowserSupported = false;
+  private silenceTimer: NodeJS.Timeout | null = null;
+  private lastSpeechTime: number = 0;
+  private vadEnabled = false;
 
   constructor() {
     this.initializeRecognition();
@@ -85,13 +91,28 @@ class WebSpeechRecognitionService {
     this.recognition.interimResults = options.interimResults ?? true;
     this.recognition.maxAlternatives = options.maxAlternatives || 1;
 
+    this.vadEnabled = options.enableVAD ?? true;
+    const silenceTimeout = options.silenceTimeout || 2000;
+    const confidenceThreshold = options.confidenceThreshold || 0.5;
+
     // Set up event handlers
     this.recognition.onresult = (event: any) => {
       const results = event.results;
       const latestResult = results[results.length - 1];
       const transcript = latestResult[0].transcript;
-      const confidence = latestResult[0].confidence;
+      const confidence = latestResult[0].confidence || 0.9;
       const isFinal = latestResult.isFinal;
+
+      this.lastSpeechTime = Date.now();
+
+      if (this.vadEnabled && this.silenceTimer) {
+        clearTimeout(this.silenceTimer);
+      }
+
+      if (isFinal && confidence < confidenceThreshold) {
+        onError(`Low confidence (${Math.round(confidence * 100)}%). Please speak more clearly.`);
+        return;
+      }
 
       onResult({
         transcript: transcript.trim(),
@@ -99,6 +120,14 @@ class WebSpeechRecognitionService {
         isFinal,
         timestamp: Date.now(),
       });
+
+      if (this.vadEnabled && isFinal) {
+        this.silenceTimer = setTimeout(() => {
+          if (Date.now() - this.lastSpeechTime >= silenceTimeout) {
+            this.stopListening();
+          }
+        }, silenceTimeout);
+      }
     };
 
     this.recognition.onerror = (event: any) => {
@@ -151,6 +180,10 @@ class WebSpeechRecognitionService {
    * Stop listening
    */
   stopListening(): void {
+    if (this.silenceTimer) {
+      clearTimeout(this.silenceTimer);
+      this.silenceTimer = null;
+    }
     if (this.recognition && this.isListening) {
       this.recognition.stop();
       this.isListening = false;
