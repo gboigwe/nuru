@@ -10,6 +10,8 @@ export interface USDCPaymentParams {
   amount: string;
   currency: SupportedCurrency;
   contractAddress: Address;
+  voiceHash: string;
+  metadata: string;
 }
 
 export interface USDCApprovalParams {
