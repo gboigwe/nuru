@@ -34,6 +34,9 @@ export interface ConversionResult {
   rate: number;
   timestamp: number;
   fee?: number;
+  slippage?: number;
+  minAmount?: number;
+  maxAmount?: number;
 }
 
 class CurrencyConverterService {
@@ -41,16 +44,20 @@ class CurrencyConverterService {
   private readonly CACHE_DURATION = 60 * 1000; // 1 minute for exchange rates
   private readonly CHAINLINK_CACHE_DURATION = 30 * 1000; // 30 seconds for Chainlink (more frequent updates)
   private readonly API_RATE_LIMIT_DELAY = 1000; // 1 second between API calls
+  private readonly DEFAULT_SLIPPAGE_TOLERANCE = 0.005; // 0.5% slippage tolerance
+  private readonly MAX_SLIPPAGE_TOLERANCE = 0.05; // 5% maximum slippage
   private lastApiCall = 0;
   private priceValidationEnabled = true; // Enable price validation by default
 
   /**
    * Convert amount from one currency to another
+   * Includes slippage protection and min/max bounds
    */
   async convert(
     amount: number,
     fromCurrency: SupportedCurrency,
     toCurrency: SupportedCurrency,
+    slippageTolerance: number = this.DEFAULT_SLIPPAGE_TOLERANCE,
   ): Promise<ConversionResult> {
     // If currencies are the same, return as-is
     if (fromCurrency === toCurrency) {
@@ -61,7 +68,15 @@ class CurrencyConverterService {
         toCurrency,
         rate: 1,
         timestamp: Date.now(),
+        slippage: 0,
+        minAmount: amount,
+        maxAmount: amount,
       };
+    }
+
+    // Validate slippage tolerance
+    if (slippageTolerance < 0 || slippageTolerance > this.MAX_SLIPPAGE_TOLERANCE) {
+      throw new Error(`Slippage tolerance must be between 0 and ${this.MAX_SLIPPAGE_TOLERANCE * 100}%`);
     }
 
     // Get exchange rate
@@ -70,6 +85,10 @@ class CurrencyConverterService {
     // Calculate converted amount
     const toAmount = amount * exchangeRate.rate;
 
+    // Calculate slippage bounds
+    const minAmount = toAmount * (1 - slippageTolerance);
+    const maxAmount = toAmount * (1 + slippageTolerance);
+
     return {
       fromAmount: amount,
       toAmount,
@@ -77,6 +96,9 @@ class CurrencyConverterService {
       toCurrency,
       rate: exchangeRate.rate,
       timestamp: exchangeRate.timestamp,
+      slippage: slippageTolerance,
+      minAmount,
+      maxAmount,
     };
   }
 
@@ -380,12 +402,33 @@ class CurrencyConverterService {
   }
 
   /**
+   * Validate if an amount is within slippage bounds
+   * Used to check if execution price matches expected price
+   */
+  validateSlippage(
+    expectedAmount: number,
+    actualAmount: number,
+    slippageTolerance: number = this.DEFAULT_SLIPPAGE_TOLERANCE,
+  ): { isValid: boolean; actualSlippage: number } {
+    const slippage = Math.abs((actualAmount - expectedAmount) / expectedAmount);
+    const isValid = slippage <= slippageTolerance;
+
+    return {
+      isValid,
+      actualSlippage: slippage,
+    };
+  }
+
+  /**
    * Get cache statistics
    */
   getCacheStats() {
     return {
       cacheSize: this.cache.size,
       cacheDuration: this.CACHE_DURATION,
+      chainlinkCacheDuration: this.CHAINLINK_CACHE_DURATION,
+      defaultSlippage: this.DEFAULT_SLIPPAGE_TOLERANCE,
+      maxSlippage: this.MAX_SLIPPAGE_TOLERANCE,
     };
   }
 }
