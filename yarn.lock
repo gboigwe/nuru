@@ -3268,7 +3268,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@libp2p/crypto@npm:^5.0.0, @libp2p/crypto@npm:^5.1.8":
+"@libp2p/crypto@npm:^5.0.0, @libp2p/crypto@npm:^5.1.13, @libp2p/crypto@npm:^5.1.8":
   version: 5.1.13
   resolution: "@libp2p/crypto@npm:5.1.13"
   dependencies:
@@ -3299,7 +3299,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@libp2p/interface@npm:^3.1.0":
+"@libp2p/interface@npm:^3.0.2, @libp2p/interface@npm:^3.1.0":
   version: 3.1.0
   resolution: "@libp2p/interface@npm:3.1.0"
   dependencies:
@@ -3326,6 +3326,19 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@libp2p/logger@npm:^6.0.5":
+  version: 6.2.2
+  resolution: "@libp2p/logger@npm:6.2.2"
+  dependencies:
+    "@libp2p/interface": ^3.1.0
+    "@multiformats/multiaddr": ^13.0.1
+    interface-datastore: ^9.0.1
+    multiformats: ^13.4.0
+    weald: ^1.1.0
+  checksum: 683c025c14d96c56f0bbeac23bc39bf0e40ef58ae729028075ddb3ff38a8eda0dcd8502a3ff964650739d617327868a60a1dc44d8d7f5edb4c01e356fe1ad7bd
+  languageName: node
+  linkType: hard
+
 "@libp2p/peer-id@npm:^5.0.0":
   version: 5.1.9
   resolution: "@libp2p/peer-id@npm:5.1.9"
@@ -3335,6 +3348,18 @@ __metadata:
     multiformats: ^13.3.6
     uint8arrays: ^5.1.0
   checksum: 6182f469bb612288a9afcbb77a0862586c40f5f8670b26c81a0dfafcc5627309abb7fe50ce8312e34bb71ebd097e19b8ad8608794476f57b40b509fef5980204
+  languageName: node
+  linkType: hard
+
+"@libp2p/peer-id@npm:^6.0.3":
+  version: 6.0.4
+  resolution: "@libp2p/peer-id@npm:6.0.4"
+  dependencies:
+    "@libp2p/crypto": ^5.1.13
+    "@libp2p/interface": ^3.1.0
+    multiformats: ^13.4.0
+    uint8arrays: ^5.1.0
+  checksum: d3bd7644e810e4d5e212b9d79b7c52d289f72f4f21c9bed30b8ca5dd7587503dcee66a223eac5b67f0ea663c8196a0b77037c61546d24e1a5b85d09dd376916c
   languageName: node
   linkType: hard
 
@@ -3792,6 +3817,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@multiformats/multiaddr-to-uri@npm:^12.0.0":
+  version: 12.0.0
+  resolution: "@multiformats/multiaddr-to-uri@npm:12.0.0"
+  dependencies:
+    "@multiformats/multiaddr": ^13.0.0
+  checksum: 5e1664c00c7fb3c9c58acee5edb55266e258a1c2f88edab9dece7dbc2fe05efc218e5b1f0c167657a8489d9dfdc57437517c71d1c1f754f9e3df765b34a3c4f6
+  languageName: node
+  linkType: hard
+
 "@multiformats/multiaddr@npm:^12.2.1, @multiformats/multiaddr@npm:^12.3.0, @multiformats/multiaddr@npm:^12.4.4":
   version: 12.5.1
   resolution: "@multiformats/multiaddr@npm:12.5.1"
@@ -3807,7 +3841,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@multiformats/multiaddr@npm:^13.0.1":
+"@multiformats/multiaddr@npm:^13.0.0, @multiformats/multiaddr@npm:^13.0.1":
   version: 13.0.1
   resolution: "@multiformats/multiaddr@npm:13.0.1"
   dependencies:
@@ -5371,7 +5405,7 @@ __metadata:
     eslint-config-next: ^15.2.3
     eslint-config-prettier: ^10.1.1
     eslint-plugin-prettier: ^5.2.4
-    kubo-rpc-client: ^5.0.2
+    kubo-rpc-client: ^6.0.2
     next: ^15.2.3
     next-nprogress-bar: ^2.3.13
     next-themes: ^0.3.0
@@ -14326,10 +14360,27 @@ __metadata:
   languageName: node
   linkType: hard
 
+"interface-datastore@npm:^9.0.1":
+  version: 9.0.2
+  resolution: "interface-datastore@npm:9.0.2"
+  dependencies:
+    interface-store: ^7.0.0
+    uint8arrays: ^5.1.0
+  checksum: dd4ce2c5519ae215e2959c4633b7ace21a1d1e5c689a58804e57d2329787b2491feadacfa4fd05046f315ea789da85d3baf7ebae64314654a7bb26e363e9ead4
+  languageName: node
+  linkType: hard
+
 "interface-store@npm:^6.0.0":
   version: 6.0.3
   resolution: "interface-store@npm:6.0.3"
   checksum: 8d4737a0fea2867780325e941c91af12891df21ed26f624115b30d2512a0de3d752cc35e3de8456f32ec8645d84b6da46625a4a3d8a76dc1e2bfecb70b97d450
+  languageName: node
+  linkType: hard
+
+"interface-store@npm:^7.0.0":
+  version: 7.0.1
+  resolution: "interface-store@npm:7.0.1"
+  checksum: d1bc7f05110dafabf70b3409c20a372c2d8b96204bcf281da5fe4fe74d1ec894bda67c10010c259efc6dc292cc06bc3df9465f8e3f2c637ba81c8ddd48a34ee8
   languageName: node
   linkType: hard
 
@@ -14427,6 +14478,16 @@ __metadata:
     protons-runtime: ^5.5.0
     uint8arraylist: ^2.4.8
   checksum: 514e65093903fa09063b76ce5fb605e204eabbb730c8eb8fdea3c9f151623eb276b300614a474e523025d8c199e14fdf57ef17c8ca0c9b32d7a441c615fa6464
+  languageName: node
+  linkType: hard
+
+"ipfs-unixfs@npm:^12.0.0":
+  version: 12.0.0
+  resolution: "ipfs-unixfs@npm:12.0.0"
+  dependencies:
+    protons-runtime: ^5.5.0
+    uint8arraylist: ^2.4.8
+  checksum: 5296d7c1abf4a62bc0e6912245fc15a76c591c2b494fe2b5a0c98458338c256270e3c91e16d59c3591431d8cf7a81fc7497b43436715eeb66a7c62ca85c4f377
   languageName: node
   linkType: hard
 
@@ -15548,6 +15609,45 @@ __metadata:
     uint8arrays: ^5.0.3
     wherearewe: ^2.0.1
   checksum: db78dc55d1729ec04306b71162d8152c31765453655f0d90045e6d4a50714d2cdb044f71d258589690a383dcbe2d1e088184d7d51c1a4bc3138025d58c2f31a0
+  languageName: node
+  linkType: hard
+
+"kubo-rpc-client@npm:^6.0.2":
+  version: 6.0.2
+  resolution: "kubo-rpc-client@npm:6.0.2"
+  dependencies:
+    "@ipld/dag-cbor": ^9.0.0
+    "@ipld/dag-json": ^10.0.0
+    "@ipld/dag-pb": ^4.0.0
+    "@libp2p/crypto": ^5.0.0
+    "@libp2p/interface": ^3.0.2
+    "@libp2p/logger": ^6.0.5
+    "@libp2p/peer-id": ^6.0.3
+    "@multiformats/multiaddr": ^13.0.1
+    "@multiformats/multiaddr-to-uri": ^12.0.0
+    any-signal: ^4.1.1
+    blob-to-it: ^2.0.5
+    browser-readablestream-to-it: ^2.0.5
+    dag-jose: ^5.0.0
+    electron-fetch: ^1.9.1
+    err-code: ^3.0.1
+    ipfs-unixfs: ^12.0.0
+    iso-url: ^1.2.1
+    it-all: ^3.0.4
+    it-first: ^3.0.4
+    it-glob: ^3.0.1
+    it-last: ^3.0.4
+    it-map: ^3.0.5
+    it-peekable: ^3.0.3
+    it-to-stream: ^1.0.0
+    merge-options: ^3.0.4
+    multiformats: ^13.1.0
+    nanoid: ^5.0.7
+    parse-duration: ^2.1.2
+    stream-to-it: ^1.0.1
+    uint8arrays: ^5.0.3
+    wherearewe: ^2.0.1
+  checksum: 9f0dce248d5e6b71ce592b1adafd5c6fc10b2a5479c72ac9f72daae3baf151db01525c74a5da628b7419fe9fc989bfdca61220e7bd45aff1e95a84dd9cfad367
   languageName: node
   linkType: hard
 
@@ -22061,7 +22161,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"weald@npm:^1.0.4":
+"weald@npm:^1.0.4, weald@npm:^1.1.0":
   version: 1.1.1
   resolution: "weald@npm:1.1.1"
   dependencies:
