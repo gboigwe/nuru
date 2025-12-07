@@ -10,6 +10,7 @@
  */
 
 import { SupportedCurrency, CURRENCIES } from '~~/constants/currencies';
+import { chainlinkPriceFeed, CHAINLINK_PRICE_FEEDS } from './ChainlinkPriceFeed';
 
 /**
  * Exchange rate data structure
@@ -33,21 +34,30 @@ export interface ConversionResult {
   rate: number;
   timestamp: number;
   fee?: number;
+  slippage?: number;
+  minAmount?: number;
+  maxAmount?: number;
 }
 
 class CurrencyConverterService {
   private cache: Map<string, ExchangeRate> = new Map();
   private readonly CACHE_DURATION = 60 * 1000; // 1 minute for exchange rates
+  private readonly CHAINLINK_CACHE_DURATION = 30 * 1000; // 30 seconds for Chainlink (more frequent updates)
   private readonly API_RATE_LIMIT_DELAY = 1000; // 1 second between API calls
+  private readonly DEFAULT_SLIPPAGE_TOLERANCE = 0.005; // 0.5% slippage tolerance
+  private readonly MAX_SLIPPAGE_TOLERANCE = 0.05; // 5% maximum slippage
   private lastApiCall = 0;
+  private priceValidationEnabled = true; // Enable price validation by default
 
   /**
    * Convert amount from one currency to another
+   * Includes slippage protection and min/max bounds
    */
   async convert(
     amount: number,
     fromCurrency: SupportedCurrency,
     toCurrency: SupportedCurrency,
+    slippageTolerance: number = this.DEFAULT_SLIPPAGE_TOLERANCE,
   ): Promise<ConversionResult> {
     // If currencies are the same, return as-is
     if (fromCurrency === toCurrency) {
@@ -58,7 +68,15 @@ class CurrencyConverterService {
         toCurrency,
         rate: 1,
         timestamp: Date.now(),
+        slippage: 0,
+        minAmount: amount,
+        maxAmount: amount,
       };
+    }
+
+    // Validate slippage tolerance
+    if (slippageTolerance < 0 || slippageTolerance > this.MAX_SLIPPAGE_TOLERANCE) {
+      throw new Error(`Slippage tolerance must be between 0 and ${this.MAX_SLIPPAGE_TOLERANCE * 100}%`);
     }
 
     // Get exchange rate
@@ -67,6 +85,10 @@ class CurrencyConverterService {
     // Calculate converted amount
     const toAmount = amount * exchangeRate.rate;
 
+    // Calculate slippage bounds
+    const minAmount = toAmount * (1 - slippageTolerance);
+    const maxAmount = toAmount * (1 + slippageTolerance);
+
     return {
       fromAmount: amount,
       toAmount,
@@ -74,6 +96,9 @@ class CurrencyConverterService {
       toCurrency,
       rate: exchangeRate.rate,
       timestamp: exchangeRate.timestamp,
+      slippage: slippageTolerance,
+      minAmount,
+      maxAmount,
     };
   }
 
@@ -213,9 +238,34 @@ class CurrencyConverterService {
 
   /**
    * Get crypto price in USD
+   * Uses Chainlink price feeds first, falls back to API
    */
   private async getCryptoToUSD(currency: SupportedCurrency): Promise<number> {
-    // Use CoinGecko free API for crypto prices
+    // Stablecoins are always ~$1
+    if (CURRENCIES[currency].isStablecoin) {
+      return 1.0;
+    }
+
+    // Try Chainlink first for ETH
+    if (currency === SupportedCurrency.ETH) {
+      try {
+        const priceFeedData = await chainlinkPriceFeed.getLatestPrice(
+          CHAINLINK_PRICE_FEEDS['ETH/USD']
+        );
+
+        // Validate price feed data
+        if (this.priceValidationEnabled && !chainlinkPriceFeed.validatePriceFeed(priceFeedData)) {
+          throw new Error('Price feed validation failed');
+        }
+
+        console.log(`✅ Chainlink ETH/USD price: $${priceFeedData.price} (updated: ${new Date(priceFeedData.updatedAt * 1000).toISOString()})`);
+        return priceFeedData.price;
+      } catch (error) {
+        console.warn('⚠️ Chainlink price feed failed, falling back to API:', error);
+      }
+    }
+
+    // Fallback to CoinGecko API for crypto prices
     const coinIds: Record<string, string> = {
       [SupportedCurrency.ETH]: 'ethereum',
       [SupportedCurrency.USDC]: 'usd-coin',
@@ -226,11 +276,6 @@ class CurrencyConverterService {
     const coinId = coinIds[currency];
     if (!coinId) {
       throw new Error(`Unsupported crypto currency: ${currency}`);
-    }
-
-    // Stablecoins are always ~$1
-    if (CURRENCIES[currency].isStablecoin) {
-      return 1.0;
     }
 
     try {
@@ -245,7 +290,9 @@ class CurrencyConverterService {
       }
 
       const data = await response.json();
-      return data[coinId]?.usd || 0;
+      const price = data[coinId]?.usd || 0;
+      console.log(`✅ CoinGecko ${currency}/USD price: $${price}`);
+      return price;
     } catch (error) {
       console.error('Crypto price API error:', error);
       // Fallback to reasonable defaults
@@ -319,15 +366,22 @@ class CurrencyConverterService {
 
   /**
    * Get cached exchange rate if still valid
+   * Uses different cache durations based on source
    */
   private getCachedRate(cacheKey: string): ExchangeRate | null {
     const cached = this.cache.get(cacheKey);
 
-    if (cached && Date.now() - cached.timestamp < this.CACHE_DURATION) {
-      return { ...cached, source: 'cache' };
-    }
-
     if (cached) {
+      // Use shorter cache for Chainlink prices (more fresh data)
+      const cacheDuration = cached.source === 'chainlink'
+        ? this.CHAINLINK_CACHE_DURATION
+        : this.CACHE_DURATION;
+
+      if (Date.now() - cached.timestamp < cacheDuration) {
+        return { ...cached, source: 'cache' };
+      }
+
+      // Expired - remove from cache
       this.cache.delete(cacheKey);
     }
 
@@ -348,12 +402,33 @@ class CurrencyConverterService {
   }
 
   /**
+   * Validate if an amount is within slippage bounds
+   * Used to check if execution price matches expected price
+   */
+  validateSlippage(
+    expectedAmount: number,
+    actualAmount: number,
+    slippageTolerance: number = this.DEFAULT_SLIPPAGE_TOLERANCE,
+  ): { isValid: boolean; actualSlippage: number } {
+    const slippage = Math.abs((actualAmount - expectedAmount) / expectedAmount);
+    const isValid = slippage <= slippageTolerance;
+
+    return {
+      isValid,
+      actualSlippage: slippage,
+    };
+  }
+
+  /**
    * Get cache statistics
    */
   getCacheStats() {
     return {
       cacheSize: this.cache.size,
       cacheDuration: this.CACHE_DURATION,
+      chainlinkCacheDuration: this.CHAINLINK_CACHE_DURATION,
+      defaultSlippage: this.DEFAULT_SLIPPAGE_TOLERANCE,
+      maxSlippage: this.MAX_SLIPPAGE_TOLERANCE,
     };
   }
 }

@@ -16,6 +16,7 @@
     "vercel:login": "vercel login"
   },
   "dependencies": {
+    "@chainlink/contracts": "^1.5.0",
     "@coinbase/onchainkit": "0.38.19",
     "@coinbase/wallet-sdk": "~4.3.6",
     "@filoz/synapse-sdk": "^0.24.1",
