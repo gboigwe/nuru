@@ -1,0 +1,35 @@
+specVersion: 0.0.5
+schema:
+  file: ./schema.graphql
+
+dataSources:
+  - kind: ethereum
+    name: VoiceRemittance
+    network: base
+    source:
+      address: "0x26aa860EbC8e0cdEcc51A5c2583Ad94b27C62156"
+      abi: VoiceRemittance
+      startBlock: 22800000
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Payment
+        - User
+        - DailyStat
+        - ProtocolStat
+        - CurrencyStat
+      abis:
+        - name: VoiceRemittance
+          file: ./abis/VoiceRemittance.json
+      eventHandlers:
+        - event: PaymentInitiated(indexed uint256,indexed address,indexed address,uint256,string,string)
+          handler: handlePaymentInitiated
+        - event: PaymentCompleted(indexed uint256,indexed address,indexed address,uint256,uint256)
+          handler: handlePaymentCompleted
+        - event: PaymentCancelled(indexed uint256,indexed address,string)
+          handler: handlePaymentCancelled
+        - event: ReputationUpdated(indexed address,uint256,uint256)
+          handler: handleReputationUpdated
+      file: ./src/mapping.ts
