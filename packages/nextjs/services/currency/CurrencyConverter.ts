@@ -10,6 +10,7 @@
  */
 
 import { SupportedCurrency, CURRENCIES } from '~~/constants/currencies';
+import { chainlinkPriceFeed } from './ChainlinkPriceFeed';
 
 /**
  * Exchange rate data structure
@@ -213,9 +214,26 @@ class CurrencyConverterService {
 
   /**
    * Get crypto price in USD
+   * Uses Chainlink price feeds first, falls back to API
    */
   private async getCryptoToUSD(currency: SupportedCurrency): Promise<number> {
-    // Use CoinGecko free API for crypto prices
+    // Stablecoins are always ~$1
+    if (CURRENCIES[currency].isStablecoin) {
+      return 1.0;
+    }
+
+    // Try Chainlink first for ETH
+    if (currency === SupportedCurrency.ETH) {
+      try {
+        const price = await chainlinkPriceFeed.getETHPrice();
+        console.log(`✅ Chainlink ETH/USD price: $${price}`);
+        return price;
+      } catch (error) {
+        console.warn('⚠️ Chainlink price feed failed, falling back to API:', error);
+      }
+    }
+
+    // Fallback to CoinGecko API for crypto prices
     const coinIds: Record<string, string> = {
       [SupportedCurrency.ETH]: 'ethereum',
       [SupportedCurrency.USDC]: 'usd-coin',
@@ -226,11 +244,6 @@ class CurrencyConverterService {
     const coinId = coinIds[currency];
     if (!coinId) {
       throw new Error(`Unsupported crypto currency: ${currency}`);
-    }
-
-    // Stablecoins are always ~$1
-    if (CURRENCIES[currency].isStablecoin) {
-      return 1.0;
     }
 
     try {
@@ -245,7 +258,9 @@ class CurrencyConverterService {
       }
 
       const data = await response.json();
-      return data[coinId]?.usd || 0;
+      const price = data[coinId]?.usd || 0;
+      console.log(`✅ CoinGecko ${currency}/USD price: $${price}`);
+      return price;
     } catch (error) {
       console.error('Crypto price API error:', error);
       // Fallback to reasonable defaults
