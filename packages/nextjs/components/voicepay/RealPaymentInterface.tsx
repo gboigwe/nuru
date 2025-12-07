@@ -8,6 +8,7 @@ import { RealBalanceDisplay } from './RealBalanceDisplay';
 import { PaymentConfirmationModal } from './PaymentConfirmationModal';
 import { TransactionResult } from './TransactionResult';
 import { RealPaymentHistory } from './RealPaymentHistory';
+import { PaymentErrorBoundary } from './PaymentErrorBoundary';
 
 export const RealPaymentInterface = () => {
   const { address, isConnected } = useAccount();
@@ -50,35 +51,37 @@ export const RealPaymentInterface = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
-      <RealBalanceDisplay address={address} />
+    <PaymentErrorBoundary>
+      <div className="max-w-4xl mx-auto p-6 space-y-6">
+        <RealBalanceDisplay address={address} />
 
-      <VoiceRecorder
-        onRecordingComplete={handleRecordingComplete}
-        isProcessing={isProcessing}
-      />
-
-      {result && result.success && result.data && audioBlob && (
-        <PaymentConfirmationModal
-          paymentData={result.data}
-          onConfirm={handleConfirmPayment}
-          onCancel={handleCancelPayment}
-          isExecuting={isExecuting}
-          audioBlob={audioBlob}
+        <VoiceRecorder
+          onRecordingComplete={handleRecordingComplete}
+          isProcessing={isProcessing}
         />
-      )}
 
-      {executionResult && (
-        <TransactionResult result={executionResult} />
-      )}
+        {result && result.success && result.data && audioBlob && (
+          <PaymentConfirmationModal
+            paymentData={result.data}
+            onConfirm={handleConfirmPayment}
+            onCancel={handleCancelPayment}
+            isExecuting={isExecuting}
+            audioBlob={audioBlob}
+          />
+        )}
 
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded p-4">
-          <p className="text-red-800">{error}</p>
-        </div>
-      )}
+        {executionResult && (
+          <TransactionResult result={executionResult} />
+        )}
 
-      <RealPaymentHistory orders={userOrders} />
-    </div>
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded p-4">
+            <p className="text-red-800">{error}</p>
+          </div>
+        )}
+
+        <RealPaymentHistory orders={userOrders} />
+      </div>
+    </PaymentErrorBoundary>
   );
 };
