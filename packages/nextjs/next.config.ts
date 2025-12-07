@@ -9,9 +9,22 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  // Fix workspace root detection
+  outputFileTracingRoot: require("path").join(__dirname, "../../"),
   webpack: config => {
-    config.resolve.fallback = { fs: false, net: false, tls: false };
+    config.resolve.fallback = {
+      fs: false,
+      net: false,
+      tls: false,
+      // Fix @react-native-async-storage missing module
+      "@react-native-async-storage/async-storage": false,
+    };
     config.externals.push("pino-pretty", "lokijs", "encoding");
+    // Ignore MetaMask SDK react-native dependencies in browser build
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      "@react-native-async-storage/async-storage": false,
+    };
     return config;
   },
 };

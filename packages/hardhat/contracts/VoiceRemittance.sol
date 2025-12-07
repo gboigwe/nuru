@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Pausable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**
  * @title VoiceRemittance
@@ -19,7 +20,10 @@ import "@openzeppelin/contracts/access/Ownable.sol";
  */
 contract VoiceRemittance is ReentrancyGuard, Pausable, Ownable {
     uint256 private _orderCounter;
-    
+
+    // USDC Token Interface
+    IERC20 public usdcToken;
+
     // Structs
     struct PaymentOrder {
         uint256 id;
@@ -116,8 +120,9 @@ contract VoiceRemittance is ReentrancyGuard, Pausable, Ownable {
         _;
     }
     
-    constructor() Ownable(msg.sender) {
-        // Constructor initializes with deployer as owner
+    constructor(address _usdcAddress) Ownable(msg.sender) {
+        require(_usdcAddress != address(0), "Invalid USDC address");
+        usdcToken = IERC20(_usdcAddress);
     }
     
     /**
@@ -164,7 +169,83 @@ contract VoiceRemittance is ReentrancyGuard, Pausable, Ownable {
         emit PaymentInitiated(orderId, msg.sender, _recipientENS, msg.value, _currency, _voiceHash);
         emit VoiceReceiptStored(orderId, _voiceHash, block.timestamp);
     }
-    
+
+    /**
+     * @dev Initiate a USDC payment directly to an address
+     * @param _recipientAddress The recipient address
+     * @param _amount USDC amount (in USDC decimals - 6 decimals)
+     * @param _voiceHash IPFS hash of the voice recording
+     * @param _metadata Additional payment metadata
+     */
+    function initiateUSDCPayment(
+        address _recipientAddress,
+        uint256 _amount,
+        string memory _voiceHash,
+        string memory _metadata
+    ) external nonReentrant whenNotPaused {
+        require(_recipientAddress != address(0), "Invalid recipient address");
+        require(_recipientAddress != msg.sender, "Cannot send to yourself");
+        require(_amount > 0, "Payment amount must be greater than 0");
+        require(bytes(_voiceHash).length > 0, "Voice hash cannot be empty");
+
+        // Transfer USDC from sender to this contract
+        require(
+            usdcToken.transferFrom(msg.sender, address(this), _amount),
+            "USDC transfer failed - check allowance"
+        );
+
+        _orderCounter++;
+        uint256 orderId = _orderCounter;
+
+        // Calculate platform fee
+        uint256 fee = (_amount * platformFeePercent) / 10000;
+        uint256 netAmount = _amount - fee;
+
+        // Create payment order (already completed since USDC transfer succeeded)
+        orders[orderId] = PaymentOrder({
+            id: orderId,
+            sender: msg.sender,
+            recipientENS: "", // Direct address payment, no ENS
+            recipientAddress: _recipientAddress,
+            amount: _amount,
+            voiceReceiptHash: _voiceHash,
+            timestamp: block.timestamp,
+            completed: true, // Immediately completed
+            currency: "USDC",
+            status: 1, // completed
+            metadata: _metadata
+        });
+
+        // Add order to user's list
+        userOrders[msg.sender].push(orderId);
+
+        // Update user profiles
+        _updateUserProfile(msg.sender, _amount, 0, true);
+        _updateUserProfile(_recipientAddress, 0, netAmount, false);
+
+        // Transfer USDC to recipient
+        require(
+            usdcToken.transfer(_recipientAddress, netAmount),
+            "USDC transfer to recipient failed"
+        );
+
+        // Transfer fee to platform owner
+        if (fee > 0) {
+            require(
+                usdcToken.transfer(owner(), fee),
+                "Fee transfer failed"
+            );
+        }
+
+        // Update reputation scores
+        _updateReputation(msg.sender, 10);
+        _updateReputation(_recipientAddress, 5);
+
+        emit PaymentInitiated(orderId, msg.sender, "", _amount, "USDC", _voiceHash);
+        emit VoiceReceiptStored(orderId, _voiceHash, block.timestamp);
+        emit PaymentCompleted(orderId, _recipientAddress, netAmount, fee);
+    }
+
     /**
      * @dev Complete payment by resolving ENS and transferring funds
      * @param _orderId The order ID to complete

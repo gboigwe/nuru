@@ -1,124 +1,112 @@
-'use client';
+/**
+ * InsufficientBalancePrompt Component
+ *
+ * Displays when user doesn't have enough balance for a payment.
+ * Shows exact shortfall and provides on-ramp option to add funds.
+ * Monitors balance changes and can auto-retry payment when sufficient.
+ */
 
-import { useState } from 'react';
-import { FundWalletCard } from '../onramp/FundWalletCard';
-import { MobileMoneyOnramp } from '../onramp/MobileMoneyOnramp';
-import { FiatSelector, FiatCurrency } from '../onramp/FiatSelector';
-import { useAccount } from 'wagmi';
+"use client";
+
+import { useEffect, useState } from "react";
+import { useBalance } from "wagmi";
+import { formatEther } from "viem";
+import { OnchainFundCard } from "~~/components/onchainkit/OnchainFundCard";
 
 interface InsufficientBalancePromptProps {
-  requiredAmount: string;
-  currentBalance: string;
-  shortfall: string;
-  onFundingSuccess?: () => void;
+  currentBalance: bigint;
+  requiredAmount: bigint;
+  shortfall: bigint;
+  userAddress?: string;
+  onBalanceSufficient?: () => void;
+  onDismiss?: () => void;
 }
 
-type OnrampMethod = 'coinbase' | 'mobile-money';
-
 export const InsufficientBalancePrompt = ({
-  requiredAmount,
   currentBalance,
+  requiredAmount,
   shortfall,
-  onFundingSuccess,
+  userAddress,
+  onBalanceSufficient,
+  onDismiss,
 }: InsufficientBalancePromptProps) => {
-  const { address } = useAccount();
-  const [selectedMethod, setSelectedMethod] = useState<OnrampMethod>('coinbase');
-  const [selectedCurrency, setSelectedCurrency] = useState<FiatCurrency>({
-    code: 'USD',
-    symbol: '$',
-    name: 'US Dollar',
-    flag: '🇺🇸',
+  const [isWaitingForFunds, setIsWaitingForFunds] = useState(false);
+
+  // Watch balance for changes
+  const { data: balanceData } = useBalance({
+    address: userAddress as `0x${string}`,
+    query: {
+      refetchInterval: isWaitingForFunds ? 1000 : false,
+    },
   });
 
+  // Check if balance became sufficient
+  useEffect(() => {
+    if (isWaitingForFunds && balanceData && balanceData.value >= requiredAmount) {
+      onBalanceSufficient?.();
+    }
+  }, [balanceData, requiredAmount, isWaitingForFunds, onBalanceSufficient]);
+
+  // Start watching for funds when component mounts
+  useEffect(() => {
+    setIsWaitingForFunds(true);
+  }, []);
+
   return (
-    <div className="space-y-4">
-      {/* Balance Warning */}
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+    <div className="alert alert-warning shadow-lg">
+      <div className="flex flex-col gap-3 w-full">
         <div className="flex items-start gap-3">
-          <span className="text-2xl">⚠️</span>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="stroke-current shrink-0 h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+            />
+          </svg>
           <div className="flex-1">
-            <p className="text-yellow-800 font-semibold">Insufficient Balance</p>
-            <p className="text-sm text-yellow-700 mt-1">
-              You have {currentBalance} USDC but need {requiredAmount} USDC
-            </p>
-            <p className="text-sm text-yellow-700">
-              Shortfall: <strong>{shortfall} USDC</strong>
-            </p>
+            <h3 className="font-bold">Insufficient Balance</h3>
+            <div className="text-sm space-y-1">
+              <p>
+                You need <strong>{formatEther(shortfall)} ETH</strong> more to complete this payment.
+              </p>
+              <div className="text-xs opacity-80">
+                <p>Current: {formatEther(currentBalance)} ETH</p>
+                <p>Required: {formatEther(requiredAmount)} ETH (including fees)</p>
+              </div>
+            </div>
           </div>
+          {onDismiss && (
+            <button onClick={onDismiss} className="btn btn-ghost btn-sm btn-circle" aria-label="Dismiss">
+              ✕
+            </button>
+          )}
         </div>
-      </div>
 
-      {/* Payment Method Selector */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4">
-        <h4 className="font-semibold mb-3">Choose Payment Method</h4>
-        <div className="grid grid-cols-2 gap-3">
-          <button
-            onClick={() => setSelectedMethod('coinbase')}
-            className={`
-              p-4 rounded-lg border-2 transition-all text-left
-              ${selectedMethod === 'coinbase'
-                ? 'border-blue-500 bg-blue-50'
-                : 'border-gray-200 hover:border-gray-300'
-              }
-            `}
-          >
-            <div className="text-2xl mb-2">💳</div>
-            <div className="font-medium">Card/Bank</div>
-            <div className="text-xs text-gray-500">Coinbase Pay</div>
-          </button>
-
-          <button
-            onClick={() => setSelectedMethod('mobile-money')}
-            className={`
-              p-4 rounded-lg border-2 transition-all text-left
-              ${selectedMethod === 'mobile-money'
-                ? 'border-blue-500 bg-blue-50'
-                : 'border-gray-200 hover:border-gray-300'
-              }
-            `}
-          >
-            <div className="text-2xl mb-2">📱</div>
-            <div className="font-medium">Mobile Money</div>
-            <div className="text-xs text-gray-500">MTN, M-Pesa, etc.</div>
-          </button>
-        </div>
-      </div>
-
-      {/* Currency Selector (for mobile money) */}
-      {selectedMethod === 'mobile-money' && (
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <h4 className="font-semibold mb-3">Select Currency</h4>
-          <FiatSelector
-            selectedCurrency={selectedCurrency.code}
-            onCurrencyChange={setSelectedCurrency}
+        <div className="flex flex-col gap-2">
+          <OnchainFundCard
+            onSuccess={() => {
+              console.log("Funds added successfully, checking balance...");
+              setIsWaitingForFunds(true);
+            }}
+            onError={(error: unknown) => {
+              console.error("Failed to add funds:", error);
+            }}
           />
+          {isWaitingForFunds && (
+            <div className="bg-base-200 rounded-lg p-3 flex items-center gap-2">
+              <span className="loading loading-spinner loading-sm"></span>
+              <p className="text-xs opacity-70">
+                Waiting for funds to arrive...
+              </p>
+            </div>
+          )}
         </div>
-      )}
-
-      {/* On-Ramp Component */}
-      {selectedMethod === 'coinbase' ? (
-        <FundWalletCard targetAmount={shortfall} onSuccess={onFundingSuccess} />
-      ) : (
-        <MobileMoneyOnramp
-          amount={shortfall}
-          currency={selectedCurrency.code as 'GHS' | 'NGN' | 'KES' | 'USD'}
-          onSuccess={onFundingSuccess || (() => {})}
-          walletAddress={address}
-        />
-      )}
-
-      {/* Alternative: Manual Transfer */}
-      <div className="bg-gray-50 rounded-lg p-4 text-sm">
-        <p className="font-semibold mb-2">Alternative: Transfer USDC</p>
-        <p className="text-gray-600 mb-2">
-          Send USDC on BASE network to your wallet:
-        </p>
-        <div className="bg-white p-3 rounded border border-gray-200">
-          <code className="block text-xs break-all font-mono">{address}</code>
-        </div>
-        <p className="text-xs text-gray-500 mt-2">
-          Make sure to use the BASE network when sending USDC
-        </p>
       </div>
     </div>
   );

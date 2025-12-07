@@ -25,11 +25,17 @@ import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
 import { createAppKit } from "@reown/appkit/react";
 import { Chain, http } from "viem";
 import { mainnet, base } from "viem/chains";
-import { SiweMessage } from "siwe";
-import { createSIWEConfig } from "@reown/appkit/siwe";
+import {
+  type SIWESession,
+  type SIWEVerifyMessageArgs,
+  type SIWECreateMessageArgs,
+  createSIWEConfig,
+  formatMessage
+} from "@reown/appkit-siwe";
 import { appMetadata } from "~~/config/metadata";
 import scaffoldConfig, { DEFAULT_ALCHEMY_API_KEY, ScaffoldConfig } from "~~/scaffold.config";
 import { getAlchemyHttpUrl } from "~~/utils/scaffold-eth";
+import { sessionManager } from "~~/services/session/SessionManager";
 
 const { targetNetworks } = scaffoldConfig;
 
@@ -71,9 +77,6 @@ const transports = enabledChains.reduce(
   (acc, chain) => {
     const rpcOverrideUrl = (scaffoldConfig.rpcOverrides as ScaffoldConfig["rpcOverrides"])?.[chain.id];
 
-    // Configure polling interval for each chain
-    const pollingInterval = scaffoldConfig.pollingInterval;
-
     if (rpcOverrideUrl) {
       acc[chain.id] = http(rpcOverrideUrl, { timeout: 30_000 });
     } else {
@@ -102,19 +105,66 @@ const transports = enabledChains.reduce(
  * SSR enabled for Next.js 15 App Router compatibility.
  */
 // SIWE Configuration
-const siweConfig = createSIWEConfig({
-  // The domain of your app (e.g., 'example.com' or 'localhost:3000' for development)
-  domain: typeof window !== 'undefined' ? window.location.host : appMetadata.url.replace(/^https?:\/\//, ''),
-  
-  // The statement that will be shown in the signature request
-  statement: 'Sign in with Ethereum to access your account.',
-  
-  // Additional options
-  options: {
-    // 1 hour expiration
-    expirationTime: 60 * 60 * 1000,
-    // Refresh the session 1 minute before it expires
-    refreshInterval: 60 * 1000,
+export const siweConfig = createSIWEConfig({
+  getMessageParams: async () => ({
+    domain: typeof window !== 'undefined' ? window.location.host : appMetadata.url.replace(/^https?:\/\//, ''),
+    uri: typeof window !== 'undefined' ? window.location.origin : appMetadata.url,
+    chains: enabledChains.map(chain => chain.id),
+    statement: 'Sign in with Ethereum to access your account.',
+  }),
+  createMessage: ({ address, ...args }: SIWECreateMessageArgs) => formatMessage(args, address),
+  getNonce: async () => {
+    // Fetch cryptographically secure nonce from backend
+    try {
+      const response = await fetch('/api/siwe/nonce');
+      if (!response.ok) {
+        throw new Error("Failed to fetch nonce");
+      }
+      const { nonce } = await response.json();
+      return nonce;
+    } catch (error) {
+      console.error("Error fetching nonce:", error);
+      throw new Error("Failed to generate nonce");
+    }
+  },
+  getSession: async (): Promise<SIWESession | null> => {
+    // Fetch session from backend
+    try {
+      const response = await fetch('/api/siwe/session');
+      if (!response.ok) {
+        return null;
+      }
+      const { session } = await response.json();
+      return session;
+    } catch (error) {
+      console.error("Error fetching session:", error);
+      return null;
+    }
+  },
+  verifyMessage: async ({ message, signature }: SIWEVerifyMessageArgs) => {
+    // Verify SIWE message signature with backend
+    try {
+      const response = await fetch('/api/siwe/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message, signature }),
+      });
+      return response.ok;
+    } catch (error) {
+      console.error('Error verifying message:', error);
+      return false;
+    }
+  },
+  signOut: async () => {
+    // Clear session on backend and client
+    try {
+      await fetch('/api/siwe/signout', { method: 'POST' });
+      sessionManager.clearSession();
+      return true;
+    } catch (error) {
+      console.error('Error signing out:', error);
+      return false;
+    }
   },
 });
 
@@ -123,10 +173,6 @@ export const wagmiAdapter = new WagmiAdapter({
   projectId,
   ssr: true,
   transports,
-  // Enable SIWE authentication
-  authentication: {
-    siweConfig,
-  },
 });
 
 /**
@@ -195,47 +241,43 @@ createAppKit({
     emailShowWallets: true, // Show wallet options alongside email login
     onramp: true, // Enable on-ramp feature for buying crypto directly within the app
   },
-  // Enable SIWE for authentication
-  authentication: {
-    siweConfig,
-  },
-  // Configure Coinbase Smart Wallet
-  walletConnect: {
-    version: '2',
-    qrModal: true,
-    // Enable Coinbase Smart Wallet specific features
-    coinbase: {
-      // Enable smart wallet features
-      smartWallet: {
-        // Enable sponsored transactions
-        sponsorTransactions: true,
-        // Enable passkeys for better UX
-        enablePasskeys: true,
-        // Set default chain to Base for better UX
-        defaultChain: base.id,
-      },
-    },
-  },
-  // Theme configuration to match Nuru brand identity
-  // This replaces CSS overrides in globals.css for a more native integration
+  /**
+   * Theme Configuration - Nuru Brand Identity
+   *
+   * Native theming using Reown AppKit's themeVariables API.
+   * This replaces CSS overrides for a cleaner, more maintainable approach.
+   *
+   * Nuru Brand Colors:
+   * - Primary Green: #12B76A (success, primary actions, wallet connect buttons)
+   * - Dark Green: #0E7A4B (hover states, color mixing for depth)
+   *
+   * Design Philosophy:
+   * - Rounded borders (24px master) for modern, friendly look
+   * - System font stack for optimal performance and native feel
+   * - High contrast for accessibility
+   * - Color mixing for consistent theming across light/dark modes
+   *
+   * @see https://docs.reown.com/appkit/react/core/theming
+   */
   themeVariables: {
-    // Nuru brand colors - green accent theme
-    '--w3m-accent': '#12B76A', // Primary green accent color
-    '--w3m-color-mix': '#0E7A4B', // Darker green for color mixing
-    '--w3m-color-mix-strength': 50, // 50% color mix strength
-    '--w3m-background': '#ffffff', // Light mode background
-    '--wui-color-accent-100': '#12B76A', // Accent color for UI elements
-    '--wui-color-accent-090': '#0E7A4B', // Darker accent variant
-    
-    // Border radius - fully rounded to match Nuru's design
-    '--w3m-border-radius-master': '9999px', // Fully rounded borders
-    
+    // Primary accent color for buttons, links, and interactive elements
+    '--apkt-accent': '#12B76A',
+
+    // Color that blends with default colors for cohesive theming
+    '--apkt-color-mix': '#0E7A4B',
+
+    // Percentage of color-mix blending (0-100). Higher = more brand color influence
+    '--apkt-color-mix-strength': 40,
+
     // Font configuration
-    '--w3m-font-family': 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', // System font stack
-    '--w3m-font-size-master': '16px', // Base font size
-    
-    // Dark mode support
-    '--w3m-background-color': '#1a1b1f', // Dark mode background
+    '--apkt-font-family': 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+    '--apkt-font-size-master': '16px',
+
+    // Border radius (24px for modern rounded look, not fully rounded to maintain readability)
+    '--apkt-border-radius-master': '24px',
+
+    // Z-index for modal layering (ensure it appears above all content)
+    '--apkt-z-index': 9999,
   },
 });
 
