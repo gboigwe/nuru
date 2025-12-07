@@ -3,3 +3,4 @@
  */
 
 export * from "./AnalyticsService";
+export * from "./ExportService";
