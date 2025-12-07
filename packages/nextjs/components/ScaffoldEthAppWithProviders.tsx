@@ -16,14 +16,17 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { OnchainKitProvider } from "@coinbase/onchainkit";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AppProgressBar as ProgressBar } from "next-nprogress-bar";
 import { Toaster } from "react-hot-toast";
 import { WagmiProvider } from "wagmi";
+import { base } from "wagmi/chains";
 import { Footer } from "~~/components/Footer";
 import { Header } from "~~/components/Header";
 import { useInitializeNativeCurrencyPrice } from "~~/hooks/scaffold-eth";
 import { wagmiConfig } from "~~/services/web3/wagmiConfig";
+import "@coinbase/onchainkit/styles.css";
 
 const ScaffoldEthApp = ({ children }: { children: React.ReactNode }) => {
   useInitializeNativeCurrencyPrice();
@@ -57,8 +60,13 @@ export const ScaffoldEthAppWithProviders = ({ children }: { children: React.Reac
   return (
     <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
-        <ProgressBar height="3px" color="#2299dd" />
-        <ScaffoldEthApp>{children}</ScaffoldEthApp>
+        <OnchainKitProvider
+          chain={base}
+          apiKey={process.env.NEXT_PUBLIC_ONCHAINKIT_API_KEY}
+        >
+          <ProgressBar height="3px" color="#2299dd" />
+          <ScaffoldEthApp>{children}</ScaffoldEthApp>
+        </OnchainKitProvider>
       </QueryClientProvider>
     </WagmiProvider>
   );
