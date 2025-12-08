@@ -4,3 +4,4 @@
 
 export * from "./OfflineQueueService";
 export * from "./PushNotificationService";
+export * from "./BackgroundSyncService";
