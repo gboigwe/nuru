@@ -1,6 +1,7 @@
 import { ScaffoldEthAppWithProviders } from "~~/components/ScaffoldEthAppWithProviders";
 import { ThemeProvider } from "~~/components/ThemeProvider";
 import { OnboardingWrapper } from "~~/components/onboarding/OnboardingWrapper";
+import { PWAProvider } from "~~/components/pwa/PWAProvider";
 import "~~/styles/globals.css";
 import { getMetadata, getViewport } from "~~/utils/scaffold-eth/getMetadata";
 
@@ -20,6 +21,7 @@ const ScaffoldEthApp = ({ children }: { children: React.ReactNode }) => {
           <ScaffoldEthAppWithProviders>
             {children}
             <OnboardingWrapper />
+            <PWAProvider />
           </ScaffoldEthAppWithProviders>
         </ThemeProvider>
       </body>
