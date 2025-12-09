@@ -19,6 +19,8 @@
     "lint": "eslint",
     "lint-staged": "eslint",
     "test": "REPORT_GAS=true hardhat test --network hardhat",
+    "test:coverage": "hardhat coverage",
+    "test:gas": "REPORT_GAS=true hardhat test",
     "verify": "hardhat etherscan-verify"
   },
   "devDependencies": {
@@ -48,6 +50,7 @@
     "prettier": "^3.5.3",
     "prettier-plugin-solidity": "^1.4.1",
     "solidity-coverage": "^0.8.13",
+    "@nomicfoundation/hardhat-chai-matchers": "^2.0.7",
     "ts-node": "^10.9.1",
     "typechain": "^8.3.2",
     "typescript": "^5.8.2"
