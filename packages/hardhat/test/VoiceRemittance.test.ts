@@ -126,4 +126,121 @@ describe("VoiceRemittance", () => {
       expect(ownerBalanceAfter - ownerBalanceBefore).to.equal(fee);
     });
   });
+
+  describe("USDC Payment Validation", () => {
+    const amount = ethers.parseUnits("100", 6);
+
+    it("should fail if insufficient USDC allowance", async () => {
+      await usdcMock.mint(user1.address, amount);
+      // No approval given
+
+      await expect(
+        contract.connect(user1).initiateUSDCPayment(
+          user2.address,
+          amount,
+          "ipfs://hash",
+          "{}"
+        )
+      ).to.be.revertedWith("USDC transfer failed - check allowance");
+    });
+
+    it("should fail if insufficient USDC balance", async () => {
+      await usdcMock.connect(user1).approve(await contract.getAddress(), amount);
+      // No USDC minted
+
+      await expect(
+        contract.connect(user1).initiateUSDCPayment(
+          user2.address,
+          amount,
+          "ipfs://hash",
+          "{}"
+        )
+      ).to.be.revertedWith("USDC transfer failed - check allowance");
+    });
+
+    it("should fail if recipient is zero address", async () => {
+      await usdcMock.mint(user1.address, amount);
+      await usdcMock.connect(user1).approve(await contract.getAddress(), amount);
+
+      await expect(
+        contract.connect(user1).initiateUSDCPayment(
+          ethers.ZeroAddress,
+          amount,
+          "ipfs://hash",
+          "{}"
+        )
+      ).to.be.revertedWith("Invalid recipient address");
+    });
+
+    it("should fail if sending to self", async () => {
+      await usdcMock.mint(user1.address, amount);
+      await usdcMock.connect(user1).approve(await contract.getAddress(), amount);
+
+      await expect(
+        contract.connect(user1).initiateUSDCPayment(
+          user1.address,
+          amount,
+          "ipfs://hash",
+          "{}"
+        )
+      ).to.be.revertedWith("Cannot send to yourself");
+    });
+
+    it("should fail if sending to contract address", async () => {
+      await usdcMock.mint(user1.address, amount);
+      await usdcMock.connect(user1).approve(await contract.getAddress(), amount);
+
+      await expect(
+        contract.connect(user1).initiateUSDCPayment(
+          await contract.getAddress(),
+          amount,
+          "ipfs://hash",
+          "{}"
+        )
+      ).to.be.revertedWith("Cannot send to contract");
+    });
+
+    it("should fail if amount is zero", async () => {
+      await usdcMock.mint(user1.address, amount);
+      await usdcMock.connect(user1).approve(await contract.getAddress(), amount);
+
+      await expect(
+        contract.connect(user1).initiateUSDCPayment(
+          user2.address,
+          0,
+          "ipfs://hash",
+          "{}"
+        )
+      ).to.be.revertedWith("Payment amount must be greater than 0");
+    });
+
+    it("should fail if amount too small", async () => {
+      const tinyAmount = 999n; // Less than 1000 (0.001 USDC)
+      await usdcMock.mint(user1.address, tinyAmount);
+      await usdcMock.connect(user1).approve(await contract.getAddress(), tinyAmount);
+
+      await expect(
+        contract.connect(user1).initiateUSDCPayment(
+          user2.address,
+          tinyAmount,
+          "ipfs://hash",
+          "{}"
+        )
+      ).to.be.revertedWith("Amount too small");
+    });
+
+    it("should fail if voice hash is empty", async () => {
+      await usdcMock.mint(user1.address, amount);
+      await usdcMock.connect(user1).approve(await contract.getAddress(), amount);
+
+      await expect(
+        contract.connect(user1).initiateUSDCPayment(
+          user2.address,
+          amount,
+          "",
+          "{}"
+        )
+      ).to.be.revertedWith("Voice hash cannot be empty");
+    });
+  });
 });
