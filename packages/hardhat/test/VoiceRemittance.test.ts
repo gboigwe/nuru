@@ -328,4 +328,114 @@ describe("VoiceRemittance", () => {
       expect(profile.transactionCount).to.equal(1);
     });
   });
+
+  describe("Payment Completion", () => {
+    const amount = ethers.parseEther("1");
+    let orderId: number;
+
+    beforeEach(async () => {
+      const tx = await contract.connect(user1).initiatePayment(
+        "test.eth",
+        "ipfs://hash",
+        "ETH",
+        "{}",
+        { value: amount }
+      );
+      await tx.wait();
+      orderId = 1;
+    });
+
+    it("should complete payment and transfer funds", async () => {
+      const balanceBefore = await ethers.provider.getBalance(user2.address);
+      
+      await contract.completePayment(orderId, user2.address);
+      
+      const order = await contract.getOrder(orderId);
+      expect(order.completed).to.be.true;
+      expect(order.recipientAddress).to.equal(user2.address);
+      
+      const balanceAfter = await ethers.provider.getBalance(user2.address);
+      const fee = (amount * 50n) / 10000n;
+      const netAmount = amount - fee;
+      expect(balanceAfter - balanceBefore).to.equal(netAmount);
+    });
+
+    it("should emit PaymentCompleted event", async () => {
+      await expect(
+        contract.completePayment(orderId, user2.address)
+      ).to.emit(contract, "PaymentCompleted");
+    });
+
+    it("should update recipient profile", async () => {
+      await contract.completePayment(orderId, user2.address);
+      
+      const profile = await contract.getUserProfile(user2.address);
+      const fee = (amount * 50n) / 10000n;
+      const netAmount = amount - fee;
+      expect(profile.totalReceived).to.equal(netAmount);
+    });
+
+    it("should fail if order already completed", async () => {
+      await contract.completePayment(orderId, user2.address);
+      
+      await expect(
+        contract.completePayment(orderId, user2.address)
+      ).to.be.revertedWith("Order already completed");
+    });
+
+    it("should fail if recipient is zero address", async () => {
+      await expect(
+        contract.completePayment(orderId, ethers.ZeroAddress)
+      ).to.be.revertedWith("Invalid recipient address");
+    });
+  });
+
+  describe("Payment Cancellation", () => {
+    const amount = ethers.parseEther("1");
+    let orderId: number;
+
+    beforeEach(async () => {
+      const tx = await contract.connect(user1).initiatePayment(
+        "test.eth",
+        "ipfs://hash",
+        "ETH",
+        "{}",
+        { value: amount }
+      );
+      await tx.wait();
+      orderId = 1;
+    });
+
+    it("should allow sender to cancel pending payment", async () => {
+      const balanceBefore = await ethers.provider.getBalance(user1.address);
+      
+      const tx = await contract.connect(user1).cancelPayment(orderId, "Changed my mind");
+      const receipt = await tx.wait();
+      
+      const order = await contract.getOrder(orderId);
+      expect(order.status).to.equal(2); // cancelled
+    });
+
+    it("should emit PaymentCancelled event", async () => {
+      await expect(
+        contract.connect(user1).cancelPayment(orderId, "Test reason")
+      )
+        .to.emit(contract, "PaymentCancelled")
+        .withArgs(orderId, user1.address, "Test reason");
+    });
+
+    it("should fail if not the sender", async () => {
+      await expect(
+        contract.connect(user2).cancelPayment(orderId, "Not my order")
+      ).to.be.revertedWith("Not the order sender");
+    });
+
+    it("should fail if order already completed", async () => {
+      await contract.completePayment(orderId, user2.address);
+      
+      await expect(
+        contract.connect(user1).cancelPayment(orderId, "Too late")
+      ).to.be.revertedWith("Cannot cancel completed order");
+    });
+  });
 });
