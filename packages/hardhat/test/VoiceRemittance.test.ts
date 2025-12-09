@@ -243,4 +243,89 @@ describe("VoiceRemittance", () => {
       ).to.be.revertedWith("Voice hash cannot be empty");
     });
   });
+
+  describe("ETH Payment with ENS", () => {
+    const amount = ethers.parseEther("1");
+
+    it("should initiate ETH payment with ENS name", async () => {
+      const tx = await contract.connect(user1).initiatePayment(
+        "mama.family.eth",
+        "ipfs://QmVoiceHash",
+        "ETH",
+        JSON.stringify({ language: "en" }),
+        { value: amount }
+      );
+
+      expect(await contract.getTotalOrders()).to.equal(1);
+      const order = await contract.getOrder(1);
+      expect(order.recipientENS).to.equal("mama.family.eth");
+      expect(order.amount).to.equal(amount);
+      expect(order.completed).to.be.false;
+    });
+
+    it("should emit PaymentInitiated event with ENS", async () => {
+      await expect(
+        contract.connect(user1).initiatePayment(
+          "test.eth",
+          "ipfs://hash",
+          "ETH",
+          "{}",
+          { value: amount }
+        )
+      )
+        .to.emit(contract, "PaymentInitiated")
+        .withArgs(1, user1.address, "test.eth", amount, "ETH", "ipfs://hash");
+    });
+
+    it("should fail if ENS name is empty", async () => {
+      await expect(
+        contract.connect(user1).initiatePayment(
+          "",
+          "ipfs://hash",
+          "ETH",
+          "{}",
+          { value: amount }
+        )
+      ).to.be.revertedWith("ENS name cannot be empty");
+    });
+
+    it("should fail if ENS name too long", async () => {
+      const longENS = "a".repeat(257) + ".eth";
+      await expect(
+        contract.connect(user1).initiatePayment(
+          longENS,
+          "ipfs://hash",
+          "ETH",
+          "{}",
+          { value: amount }
+        )
+      ).to.be.revertedWith("ENS name too long");
+    });
+
+    it("should fail if payment amount is zero", async () => {
+      await expect(
+        contract.connect(user1).initiatePayment(
+          "test.eth",
+          "ipfs://hash",
+          "ETH",
+          "{}",
+          { value: 0 }
+        )
+      ).to.be.revertedWith("Payment amount must be greater than 0");
+    });
+
+    it("should update user profile on payment", async () => {
+      await contract.connect(user1).initiatePayment(
+        "test.eth",
+        "ipfs://hash",
+        "ETH",
+        "{}",
+        { value: amount }
+      );
+
+      const profile = await contract.getUserProfile(user1.address);
+      expect(profile.totalSent).to.equal(amount);
+      expect(profile.transactionCount).to.equal(1);
+    });
+  });
 });
