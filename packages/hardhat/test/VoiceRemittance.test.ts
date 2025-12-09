@@ -438,4 +438,130 @@ describe("VoiceRemittance", () => {
       ).to.be.revertedWith("Cannot cancel completed order");
     });
   });
+
+  describe("Admin Functions", () => {
+    it("should allow owner to pause contract", async () => {
+      await contract.pause();
+      expect(await contract.paused()).to.be.true;
+    });
+
+    it("should prevent non-owner from pausing", async () => {
+      await expect(
+        contract.connect(user1).pause()
+      ).to.be.revertedWithCustomError(contract, "OwnableUnauthorizedAccount");
+    });
+
+    it("should allow owner to unpause contract", async () => {
+      await contract.pause();
+      await contract.unpause();
+      expect(await contract.paused()).to.be.false;
+    });
+
+    it("should prevent payments when paused", async () => {
+      await contract.pause();
+      
+      await expect(
+        contract.connect(user1).initiatePayment(
+          "test.eth",
+          "ipfs://hash",
+          "ETH",
+          "{}",
+          { value: ethers.parseEther("1") }
+        )
+      ).to.be.revertedWithCustomError(contract, "EnforcedPause");
+    });
+
+    it("should allow owner to queue fee change", async () => {
+      const newFee = 100; // 1%
+      await expect(
+        contract.queueFeeChange(newFee)
+      ).to.emit(contract, "FeeChangeQueued");
+    });
+
+    it("should prevent fee change above maximum", async () => {
+      const tooHighFee = 301; // 3.01%
+      await expect(
+        contract.queueFeeChange(tooHighFee)
+      ).to.be.revertedWith("Fee too high");
+    });
+
+    it("should execute fee change after timelock", async () => {
+      const newFee = 100;
+      await contract.queueFeeChange(newFee);
+      
+      // Fast forward 7 days
+      await time.increase(7 * 24 * 60 * 60);
+      
+      await expect(
+        contract.executeFeeChange(newFee)
+      ).to.emit(contract, "FeeChangeExecuted");
+      
+      expect(await contract.platformFeePercent()).to.equal(newFee);
+    });
+
+    it("should fail to execute fee change before timelock", async () => {
+      const newFee = 100;
+      await contract.queueFeeChange(newFee);
+      
+      await expect(
+        contract.executeFeeChange(newFee)
+      ).to.be.revertedWith("Timelock active");
+    });
+  });
+
+  describe("Security Features", () => {
+    it("should enforce rate limiting", async () => {
+      const amount = ethers.parseUnits("100", 6);
+      await usdcMock.mint(user1.address, amount * 2n);
+      await usdcMock.connect(user1).approve(await contract.getAddress(), amount * 2n);
+
+      // First payment should succeed
+      await contract.connect(user1).initiateUSDCPayment(
+        user2.address,
+        amount,
+        "ipfs://hash1",
+        "{}"
+      );
+
+      // Second immediate payment should fail
+      await expect(
+        contract.connect(user1).initiateUSDCPayment(
+          user2.address,
+          amount,
+          "ipfs://hash2",
+          "{}"
+        )
+      ).to.be.revertedWith("Rate limit");
+    });
+
+    it("should enforce daily limits", async () => {
+      const largeAmount = ethers.parseUnits("60000", 6); // Exceeds 50k daily limit
+      await usdcMock.mint(user1.address, largeAmount);
+      await usdcMock.connect(user1).approve(await contract.getAddress(), largeAmount);
+
+      await expect(
+        contract.connect(user1).initiateUSDCPayment(
+          user2.address,
+          largeAmount,
+          "ipfs://hash",
+          "{}"
+        )
+      ).to.be.revertedWith("Exceeds daily limit");
+    });
+
+    it("should enforce per-transaction limits", async () => {
+      const hugeAmount = ethers.parseUnits("15000", 6); // Exceeds 10k per-tx limit
+      await usdcMock.mint(user1.address, hugeAmount);
+      await usdcMock.connect(user1).approve(await contract.getAddress(), hugeAmount);
+
+      await expect(
+        contract.connect(user1).initiateUSDCPayment(
+          user2.address,
+          hugeAmount,
+          "ipfs://hash",
+          "{}"
+        )
+      ).to.be.revertedWith("Exceeds per-tx limit");
+    });
+  });
 });
