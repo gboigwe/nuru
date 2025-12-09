@@ -1,4 +1,4 @@
-# Voice-to-Crypto Remittance MVP: Complete Development Guide for Claude Code
+# Voice-to-Crypto Remittance MVP: Complete Development Guide
 
 ## 🎯 PROJECT MISSION
 
@@ -11,7 +11,7 @@
 
 **Target Bounties**: ENS ($2,000), Base ($1,500), EFP ($200), Buidl Guidl ($500), FileCoin ($500) = **$4,700 potential**
 
-## 🎯 CORE RULES FOR CLAUDE CODE
+## 🎯 CORE RULES
 
 ### Rule 1: MVP-First Mentality
 - Build working functionality over perfect code
