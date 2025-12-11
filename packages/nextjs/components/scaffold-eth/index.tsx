@@ -5,3 +5,17 @@ export * from "./Faucet";
 export * from "./FaucetButton";
 export * from "./Input";
 export * from "./ReownConnectButton";
+
+// WalletConnect UI Components
+export * from "./WalletBalance";
+export * from "./AddressDisplay";
+export * from "./NetworkBadge";
+export * from "./ChainChecker";
+export * from "./WalletStatus";
+export * from "./NetworkSwitcher";
+export * from "./SessionStatus";
+export * from "./OnRampButton";
+export * from "./LowBalancePrompt";
+export * from "./ConnectionError";
+export * from "./ChainMismatchWarning";
+export * from "./InsufficientBalancePrompt";

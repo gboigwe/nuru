@@ -5,12 +5,18 @@
 import { GenericContractsDeclaration } from "~~/utils/scaffold-eth/contract";
 
 const deployedContracts = {
-  84532: {
+  8453: {
     VoiceRemittance: {
-      address: "0xf163977578b6d41b464b989a5c7d6f9620D258B0",
+      address: "0x26aa860EbC8e0cdEcc51A5c2583Ad94b27C62156",
       abi: [
         {
-          "inputs": [],
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_usdcAddress",
+              "type": "address"
+            }
+          ],
           "stateMutability": "nonpayable",
           "type": "constructor"
         },
@@ -546,6 +552,34 @@ const deployedContracts = {
         {
           "inputs": [
             {
+              "internalType": "address",
+              "name": "_recipientAddress",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_amount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "string",
+              "name": "_voiceHash",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "_metadata",
+              "type": "string"
+            }
+          ],
+          "name": "initiateUSDCPayment",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
               "internalType": "uint256",
               "name": "",
               "type": "uint256"
@@ -840,6 +874,19 @@ const deployedContracts = {
               "internalType": "uint256",
               "name": "lastActivity",
               "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "usdcToken",
+          "outputs": [
+            {
+              "internalType": "contract IERC20",
+              "name": "",
+              "type": "address"
             }
           ],
           "stateMutability": "view",

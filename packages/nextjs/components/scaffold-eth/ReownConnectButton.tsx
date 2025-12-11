@@ -1,5 +1,7 @@
 "use client";
 
+import { WalletConnectButton } from "~~/components/WalletConnect/WalletConnectButton";
+
 /**
  * Reown AppKit Connect Button for Nuru
  * Replaces RainbowKitCustomConnectButton with Reown's wallet connection UI
@@ -27,3 +29,5 @@ export const ReownConnectButton = () => {
     </div>
   );
 };
+
+export default ReownConnectButton;

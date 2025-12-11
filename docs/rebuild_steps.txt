@@ -1,0 +1,654 @@
+# VoicePay Africa: Complete Miniapp Conversion Guide
+
+## 🎯 MISSION: Convert Existing Scaffold-ETH 2 to Farcaster Miniapp
+
+Transform your current VoicePay project into a **Farcaster miniapp** that preserves existing smart contracts while adding social-first functionality for maximum bounty capture.
+
+---
+
+## 📋 CURRENT PROJECT ANALYSIS
+
+### What We're Preserving ✅
+- **Smart Contracts**: Already deployed on Base Sepolia
+- **Voice Processing Logic**: Core voice-to-payment functionality
+- **ENS Integration**: Existing ENS resolution system
+- **Filecoin Storage**: Synapse SDK implementation
+- **Network Configuration**: Dual Base Sepolia + Filecoin setup
+
+### What We're Adding 🔄
+- **MiniKit Framework**: Farcaster miniapp infrastructure
+- **Social Features**: Compose cast, profile viewing, social verification
+- **Frame Manifest**: Proper miniapp discovery and sharing
+- **Mobile-First UI**: Optimized for social feed consumption
+- **EFP Integration**: Social graph verification for payments
+
+---
+
+## 🚀 PHASE 1: MINIKIT SETUP (30 minutes)
+
+### Step 1.1: Install MiniKit Dependencies
+```bash
+# Install MiniKit and OnchainKit
+npm install @coinbase/onchainkit
+npm install @coinbase/onchainkit/minikit
+
+# Install additional miniapp dependencies
+npm install @ensdomains/ensjs
+npm install @ethereum-follows-protocol/sdk
+npm install viem wagmi @rainbow-me/rainbowkit
+
+# Install voice processing (keep existing)
+npm install openai
+npm install @google-cloud/speech
+
+# Install storage (keep existing Synapse SDK)
+npm install synapse-sdk
+```
+
+### Step 1.2: Environment Configuration
+```bash
+# Update .env.local with miniapp-specific variables
+echo "# MiniKit Configuration" >> .env.local
+echo "NEXT_PUBLIC_ONCHAINKIT_API_KEY=your_coinbase_api_key" >> .env.local
+echo "NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME=VoicePay Africa" >> .env.local
+echo "NEXT_PUBLIC_URL=https://your-app-url.vercel.app" >> .env.local
+
+# Frame manifest variables (will be generated)
+echo "NEXT_PUBLIC_FARCASTER_HEADER=" >> .env.local
+echo "NEXT_PUBLIC_FARCASTER_PAYLOAD=" >> .env.local
+echo "NEXT_PUBLIC_FARCASTER_SIGNATURE=" >> .env.local
+
+# Keep existing variables
+echo "# Voice Processing (existing)" >> .env.local
+echo "OPENAI_API_KEY=your_existing_key" >> .env.local
+
+# Keep existing Filecoin variables
+echo "# Filecoin Storage (existing)" >> .env.local
+echo "NEXT_PUBLIC_FILECOIN_SERVICE_PRIVATE_KEY=your_existing_key" >> .env.local
+```
+
+### Step 1.3: Update Package.json Scripts
+```bash
+# Add miniapp-specific scripts
+cat >> package.json << 'EOF'
+{
+  "scripts": {
+    "dev:miniapp": "next dev",
+    "build:miniapp": "next build",
+    "deploy:miniapp": "vercel deploy --prod",
+    "manifest:generate": "node scripts/generate-manifest.js"
+  }
+}
+EOF
+```
+
+---
+
+## 🔧 PHASE 2: MINIKIT PROVIDER SETUP (45 minutes)
+
+### Step 2.1: Create MiniKit Provider
+```typescript
+// Create app/providers/MiniKitProvider.tsx
+import { MiniKitProvider } from '@coinbase/onchainkit/minikit'
+import { base } from 'viem/chains'
+import { ReactNode } from 'react'
+
+export function MiniKitContextProvider({ children }: { children: ReactNode }) {
+  return (
+    <MiniKitProvider 
+      apiKey={process.env.NEXT_PUBLIC_ONCHAINKIT_API_KEY}
+      chain={base}
+      config={{
+        appearance: {
+          mode: 'auto',
+          theme: 'default',
+          name: process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME,
+          logo: '/voicepay-logo.png'
+        }
+      }}
+    >
+      {children}
+    </MiniKitProvider>
+  )
+}
+```
+
+### Step 2.2: Update Root Layout
+```typescript
+// Update app/layout.tsx
+import { MiniKitContextProvider } from './providers/MiniKitProvider'
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  return (
+    <html lang="en">
+      <body>
+        <MiniKitContextProvider>
+          {children}
+        </MiniKitContextProvider>
+      </body>
+    </html>
+  )
+}
+```
+
+### Step 2.3: Create Frame Metadata
+```typescript
+// Update app/page.tsx metadata
+import { Metadata } from 'next'
+
+export async function generateMetadata(): Promise<Metadata> {
+  const URL = process.env.NEXT_PUBLIC_URL
+  
+  return {
+    title: 'VoicePay Africa - Voice Remittances',
+    description: 'Send money across Africa using voice commands and ENS names',
+    other: {
+      "fc:frame": JSON.stringify({
+        version: "next",
+        imageUrl: `${URL}/api/og-image`,
+        button: {
+          title: "Launch VoicePay",
+          action: {
+            type: "launch_frame", 
+            name: "VoicePay Africa",
+            url: URL,
+            splashImageUrl: `${URL}/splash-image.png`,
+            splashBackgroundColor: "#1a365d"
+          }
+        }
+      })
+    }
+  }
+}
+```
+
+---
+
+## 🎤 PHASE 3: VOICE INTERFACE CONVERSION (60 minutes)
+
+### Step 3.1: Create Miniapp Voice Component
+```typescript
+// Create components/miniapp/VoicePayMiniapp.tsx
+'use client'
+
+import { useMiniKit, useComposeCast, useAddFrame } from '@coinbase/onchainkit/minikit'
+import { useAccount } from 'wagmi'
+import { useState, useEffect } from 'react'
+
+// Import your existing voice processing logic
+import { VoiceProcessor } from '../voice/VoiceProcessor'
+import { VoicePayService } from '../services/VoicePayService'
+
+export function VoicePayMiniapp() {
+  const { setFrameReady, isFrameReady, context } = useMiniKit()
+  const { composeCast } = useComposeCast()
+  const { addFrame } = useAddFrame()
+  const { address, isConnected } = useAccount()
+  
+  const [isRecording, setIsRecording] = useState(false)
+  const [paymentResult, setPaymentResult] = useState(null)
+  
+  // Initialize miniapp
+  useEffect(() => {
+    if (!isFrameReady) {
+      setFrameReady()
+    }
+  }, [setFrameReady, isFrameReady])
+  
+  const handleVoicePayment = async (audioBlob: Blob) => {
+    try {
+      // Use your existing voice processing logic
+      const voiceProcessor = new VoiceProcessor()
+      const paymentIntent = await voiceProcessor.extractPaymentIntent(audioBlob)
+      
+      // Use your existing payment service
+      const voicePayService = new VoicePayService()
+      const result = await voicePayService.executePayment(paymentIntent)
+      
+      setPaymentResult(result)
+      
+      // Share success on Farcaster
+      await composeCast({
+        text: `Just sent ${paymentIntent.amount} ${paymentIntent.currency} to ${paymentIntent.recipientENS} using VoicePay! 🎤💸`,
+        embeds: [`https://sepolia.basescan.org/tx/${result.txHash}`]
+      })
+      
+    } catch (error) {
+      console.error('Voice payment failed:', error)
+    }
+  }
+  
+  return (
+    <div className="flex flex-col min-h-screen bg-gradient-to-b from-blue-50 to-white">
+      {/* Header with Frame Actions */}
+      <div className="flex justify-between items-center p-4 bg-white shadow-sm">
+        <h1 className="text-xl font-bold text-gray-900">VoicePay Africa</h1>
+        <button
+          onClick={() => addFrame()}
+          className="px-3 py-1 bg-blue-600 text-white rounded-lg text-sm"
+        >
+          Save Frame
+        </button>
+      </div>
+      
+      {/* Voice Payment Interface */}
+      <div className="flex-1 flex flex-col items-center justify-center p-6">
+        <div className="text-center mb-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            Send Money with Your Voice
+          </h2>
+          <p className="text-gray-600">
+            Say: "Send 50 cedis to mama.family.eth"
+          </p>
+        </div>
+        
+        {/* Voice Recording Button */}
+        <VoiceRecordingButton
+          isRecording={isRecording}
+          onStartRecording={() => setIsRecording(true)}
+          onStopRecording={(blob) => {
+            setIsRecording(false)
+            handleVoicePayment(blob)
+          }}
+        />
+        
+        {/* Payment Result */}
+        {paymentResult && (
+          <PaymentSuccessCard result={paymentResult} />
+        )}
+      </div>
+      
+      {/* Wallet Connection */}
+      <div className="p-4 border-t bg-white">
+        <WalletConnectionMiniapp />
+      </div>
+    </div>
+  )
+}
+```
+
+### Step 3.2: Create Voice Recording Component
+```typescript
+// Create components/miniapp/VoiceRecordingButton.tsx
+'use client'
+
+import { useState, useRef } from 'react'
+
+interface VoiceRecordingButtonProps {
+  isRecording: boolean
+  onStartRecording: () => void
+  onStopRecording: (blob: Blob) => void
+}
+
+export function VoiceRecordingButton({ 
+  isRecording, 
+  onStartRecording, 
+  onStopRecording 
+}: VoiceRecordingButtonProps) {
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const chunksRef = useRef<Blob[]>([])
+  
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const mediaRecorder = new MediaRecorder(stream)
+      
+      mediaRecorderRef.current = mediaRecorder
+      chunksRef.current = []
+      
+      mediaRecorder.ondataavailable = (event) => {
+        chunksRef.current.push(event.data)
+      }
+      
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(chunksRef.current, { type: 'audio/wav' })
+        onStopRecording(blob)
+        stream.getTracks().forEach(track => track.stop())
+      }
+      
+      mediaRecorder.start()
+      onStartRecording()
+    } catch (error) {
+      console.error('Failed to start recording:', error)
+    }
+  }
+  
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      mediaRecorderRef.current.stop()
+    }
+  }
+  
+  return (
+    <button
+      className={`w-32 h-32 rounded-full flex items-center justify-center text-white text-4xl transition-all ${
+        isRecording 
+          ? 'bg-red-500 animate-pulse' 
+          : 'bg-blue-600 hover:bg-blue-700'
+      }`}
+      onMouseDown={isRecording ? stopRecording : startRecording}
+      onTouchStart={isRecording ? stopRecording : startRecording}
+    >
+      {isRecording ? '⏹️' : '🎤'}
+    </button>
+  )
+}
+```
+
+---
+
+## 📱 PHASE 4: SOCIAL FEATURES INTEGRATION (45 minutes)
+
+### Step 4.1: Add EFP Social Verification
+```typescript
+// Create components/miniapp/SocialVerification.tsx
+'use client'
+
+import { useEffect, useState } from 'react'
+import { EFPService } from '../services/EFPService'
+
+interface SocialVerificationProps {
+  ensName: string
+  senderAddress: string
+}
+
+export function SocialVerification({ ensName, senderAddress }: SocialVerificationProps) {
+  const [verification, setVerification] = useState({
+    isFollowing: false,
+    trustScore: 0,
+    mutualFollows: 0
+  })
+  
+  useEffect(() => {
+    const checkSocialStatus = async () => {
+      const efpService = new EFPService()
+      
+      // Check if sender follows recipient
+      const isFollowing = await efpService.checkFollowStatus(senderAddress, ensName)
+      
+      // Calculate trust score based on mutual connections
+      const trustScore = await efpService.calculateTrustScore(ensName)
+      
+      // Get mutual follow count
+      const mutualFollows = await efpService.getMutualFollows(senderAddress, ensName)
+      
+      setVerification({ isFollowing, trustScore, mutualFollows })
+    }
+    
+    checkSocialStatus()
+  }, [ensName, senderAddress])
+  
+  return (
+    <div className="bg-gray-50 rounded-lg p-3 mb-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-2">
+          {verification.isFollowing && (
+            <span className="text-green-500 text-sm">✓ Following</span>
+          )}
+          <span className="text-sm text-gray-600">
+            Trust: {verification.trustScore}/10
+          </span>
+        </div>
+        
+        {verification.mutualFollows > 0 && (
+          <span className="text-xs text-blue-600">
+            {verification.mutualFollows} mutual follows
+          </span>
+        )}
+      </div>
+    </div>
+  )
+}
+```
+
+### Step 4.2: Add Payment Sharing Component
+```typescript
+// Create components/miniapp/PaymentSharing.tsx
+'use client'
+
+import { useComposeCast, useViewProfile } from '@coinbase/onchainkit/minikit'
+
+interface PaymentSharingProps {
+  paymentResult: {
+    txHash: string
+    amount: string
+    currency: string
+    recipientENS: string
+    pieceID?: string
+  }
+}
+
+export function PaymentSharing({ paymentResult }: PaymentSharingProps) {
+  const { composeCast } = useComposeCast()
+  const { viewProfile } = useViewProfile()
+  
+  const sharePayment = async () => {
+    const message = `Just sent ${paymentResult.amount} ${paymentResult.currency} to ${paymentResult.recipientENS} using VoicePay Africa! 🎤💸\n\nVoice payments on Base L2 with ENS names - the future of remittances! 🌍`
+    
+    await composeCast({
+      text: message,
+      embeds: [
+        `https://sepolia.basescan.org/tx/${paymentResult.txHash}`,
+        ...(paymentResult.pieceID ? [`https://calibration.filfox.info/piece/${paymentResult.pieceID}`] : [])
+      ]
+    })
+  }
+  
+  return (
+    <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+      <div className="text-center">
+        <h3 className="text-lg font-semibold text-green-800 mb-2">
+          Payment Successful! ✅
+        </h3>
+        
+        <div className="space-y-2 text-sm text-gray-600 mb-4">
+          <p>Sent: {paymentResult.amount} {paymentResult.currency}</p>
+          <p>To: {paymentResult.recipientENS}</p>
+          <p>TX: {paymentResult.txHash.slice(0, 10)}...</p>
+        </div>
+        
+        <div className="flex space-x-2">
+          <button
+            onClick={sharePayment}
+            className="flex-1 bg-blue-600 text-white py-2 rounded-lg text-sm"
+          >
+            Share on Farcaster
+          </button>
+          
+          <button
+            onClick={() => viewProfile({ ensName: paymentResult.recipientENS })}
+            className="flex-1 bg-gray-600 text-white py-2 rounded-lg text-sm"
+          >
+            View Profile
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+```
+
+---
+
+## 🛠️ PHASE 5: MANIFEST & DEPLOYMENT (30 minutes)
+
+### Step 5.1: Create Frame Manifest Endpoint
+```typescript
+// Create app/.well-known/farcaster.json/route.ts
+import { NextRequest } from 'next/server'
+
+export async function GET(request: NextRequest) {
+  const manifest = {
+    "accountAssociation": {
+      "header": process.env.NEXT_PUBLIC_FARCASTER_HEADER || "",
+      "payload": process.env.NEXT_PUBLIC_FARCASTER_PAYLOAD || "",
+      "signature": process.env.NEXT_PUBLIC_FARCASTER_SIGNATURE || ""
+    },
+    "frame": {
+      "version": "1",
+      "name": "VoicePay Africa",
+      "subtitle": "Voice-powered crypto remittances", 
+      "description": "Send money across Africa using voice commands and ENS names. Built on Base L2 with Filecoin storage.",
+      "iconUrl": `${process.env.NEXT_PUBLIC_URL}/icon-192.png`,
+      "homeUrl": process.env.NEXT_PUBLIC_URL,
+      "splashImageUrl": `${process.env.NEXT_PUBLIC_URL}/splash-image.png`,
+      "splashBackgroundColor": "#1a365d",
+      "heroImageUrl": `${process.env.NEXT_PUBLIC_URL}/hero-image.png`,
+      "tagline": "Speak Money, Send Money",
+      "screenshotUrls": [
+        `${process.env.NEXT_PUBLIC_URL}/screenshot1.png`,
+        `${process.env.NEXT_PUBLIC_URL}/screenshot2.png`
+      ],
+      "primaryCategory": "finance",
+      "tags": ["payments", "voice", "ens", "africa", "remittances"],
+      "webhookUrl": `${process.env.NEXT_PUBLIC_URL}/api/webhook`
+    }
+  }
+  
+  return Response.json(manifest)
+}
+```
+
+### Step 5.2: Create OG Image Generation
+```typescript
+// Create app/api/og-image/route.tsx
+import { ImageResponse } from 'next/og'
+
+export async function GET() {
+  return new ImageResponse(
+    (
+      <div
+        style={{
+          height: '100%',
+          width: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: '#1a365d',
+          fontSize: 32,
+          fontWeight: 600,
+        }}
+      >
+        <div style={{ color: 'white', marginBottom: 20 }}>🎤</div>
+        <div style={{ color: 'white', textAlign: 'center' }}>
+          VoicePay Africa
+        </div>
+        <div style={{ color: '#94a3b8', fontSize: 20, textAlign: 'center' }}>
+          Voice-powered crypto remittances
+        </div>
+      </div>
+    ),
+    {
+      width: 1200,
+      height: 630,
+    },
+  )
+}
+```
+
+### Step 5.3: Update Main Page Component
+```typescript
+// Update app/page.tsx
+'use client'
+
+import { VoicePayMiniapp } from './components/miniapp/VoicePayMiniapp'
+
+export default function HomePage() {
+  return <VoicePayMiniapp />
+}
+```
+
+---
+
+## 🚀 PHASE 6: DEPLOYMENT & TESTING (15 minutes)
+
+### Step 6.1: Deploy to Vercel
+```bash
+# Build and deploy
+npm run build
+npx vercel deploy --prod
+
+# Note the deployment URL for manifest configuration
+```
+
+### Step 6.2: Generate Frame Manifest Signature
+```bash
+# Use Farcaster manifest tool: https://www.farcaster.xyz/dev-docs/frames/spec#manifest
+# Or use Warpcast frame validator for testing
+```
+
+### Step 6.3: Test in Farcaster
+```bash
+# Test URL in Warpcast frame validator
+# Share frame URL in Farcaster to test social features
+# Verify voice recording works in mobile Farcaster app
+```
+
+---
+
+## 📋 FINAL CHECKLIST
+
+### Technical Requirements ✅
+- [ ] MiniKit provider properly configured
+- [ ] Voice recording works in mobile browsers
+- [ ] ENS resolution integrated with existing logic
+- [ ] Base Sepolia payments use existing smart contracts
+- [ ] Filecoin storage uses existing Synapse SDK
+- [ ] Frame manifest serves correctly
+- [ ] Social sharing composes casts properly
+
+### Bounty Compliance ✅
+- [ ] **ENS ($2,000)**: Voice commands extract and resolve ENS names
+- [ ] **Base ($1,500)**: Payments execute on Base Sepolia with proof
+- [ ] **EFP ($200)**: Social verification checks follow relationships
+- [ ] **Buidl Guidl ($500)**: Built on Scaffold-ETH 2 framework
+- [ ] **Filecoin ($500)**: Voice receipts stored with Synapse SDK
+
+### Demo Requirements ✅
+- [ ] Public miniapp URL accessible to judges
+- [ ] Voice-to-payment flow works end-to-end
+- [ ] Social features demonstrate in Farcaster
+- [ ] Clear documentation of bounty compliance
+- [ ] Video demo showing all features
+
+---
+
+## 🎯 COMMANDS
+
+Execute these commands in sequence to build the miniapp:
+
+```bash
+# 1. Install dependencies
+npm install @coinbase/onchainkit @ensdomains/ensjs @ethereum-follows-protocol/sdk
+
+# 2. Create MiniKit provider structure
+mkdir -p app/providers app/components/miniapp app/.well-known/farcaster.json app/api/og-image
+
+# 3. Set up environment
+cp .env.local.example .env.local
+# Add MiniKit variables as shown above
+
+# 4. Create all components as detailed in phases above
+# Copy the TypeScript code into appropriate files
+
+# 5. Update package.json and build
+npm run build
+
+# 6. Deploy and test
+npx vercel deploy --prod
+
+# 7. Test frame manifest
+curl https://your-app-url.vercel.app/.well-known/farcaster.json
+
+# 8. Validate in Warpcast
+# Share URL in Farcaster for testing
+```
+
+---
+
+**This conversion preserves all your existing work while adding the social layer needed for maximum bounty capture. The miniapp will leverage your proven voice processing and smart contract infrastructure while adding viral social features.**

@@ -1,0 +1,129 @@
+name: Test Suite
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  hardhat-tests:
+    name: Smart Contract Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'yarn'
+      
+      - name: Install dependencies
+        run: |
+          cd packages/hardhat
+          yarn install --frozen-lockfile
+      
+      - name: Compile contracts
+        run: |
+          cd packages/hardhat
+          yarn compile
+      
+      - name: Run Hardhat tests
+        run: |
+          cd packages/hardhat
+          yarn test
+      
+      - name: Generate coverage report
+        run: |
+          cd packages/hardhat
+          yarn coverage || true
+      
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./packages/hardhat/coverage/lcov.info
+          flags: contracts
+          name: contract-coverage
+
+  frontend-tests:
+    name: Frontend Unit Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'yarn'
+      
+      - name: Install dependencies
+        run: |
+          cd packages/nextjs
+          yarn install --frozen-lockfile
+      
+      - name: Run unit tests
+        run: |
+          cd packages/nextjs
+          yarn test:coverage
+      
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./packages/nextjs/coverage/lcov.info
+          flags: frontend
+          name: frontend-coverage
+
+  lint:
+    name: Lint Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'yarn'
+      
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+      
+      - name: Run linter
+        run: |
+          cd packages/nextjs
+          yarn lint
+      
+      - name: Check TypeScript
+        run: |
+          cd packages/nextjs
+          yarn check-types
+
+  test-summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    needs: [hardhat-tests, frontend-tests, lint]
+    if: always()
+    
+    steps:
+      - name: Check test results
+        run: |
+          echo "Smart Contract Tests: ${{ needs.hardhat-tests.result }}"
+          echo "Frontend Tests: ${{ needs.frontend-tests.result }}"
+          echo "Lint Check: ${{ needs.lint.result }}"
+          
+          if [ "${{ needs.hardhat-tests.result }}" != "success" ] || \
+             [ "${{ needs.frontend-tests.result }}" != "success" ] || \
+             [ "${{ needs.lint.result }}" != "success" ]; then
+            echo "❌ Some tests failed"
+            exit 1
+          else
+            echo "✅ All tests passed"
+          fi

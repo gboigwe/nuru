@@ -1,9 +1,9 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 
 const baseUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL
   ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
   : `http://localhost:${process.env.PORT || 3000}`;
-const titleTemplate = "%s | Scaffold-ETH 2";
+const titleTemplate = "%s | Nuru";
 
 export const getMetadata = ({
   title,
@@ -23,6 +23,20 @@ export const getMetadata = ({
       template: titleTemplate,
     },
     description: description,
+    manifest: '/manifest.json',
+    appleWebApp: {
+      capable: true,
+      statusBarStyle: 'default',
+      title: 'Nuru',
+    },
+    icons: {
+      icon: [
+        { url: "/favicon.png", sizes: "32x32", type: "image/png" },
+        { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
+      ],
+      shortcut: "/icons/icon-192x192.png",
+      apple: "/icons/icon-192x192.png",
+    },
     openGraph: {
       title: {
         default: title,
@@ -43,8 +57,15 @@ export const getMetadata = ({
       description: description,
       images: [imageUrl],
     },
-    icons: {
-      icon: [{ url: "/favicon.png", sizes: "32x32", type: "image/png" }],
-    },
+  };
+};
+
+export const getViewport = (themeColor: string = "#12B76A"): Viewport => {
+  return {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+    themeColor: themeColor,
   };
 };
