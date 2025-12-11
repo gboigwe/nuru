@@ -1,0 +1,37 @@
+{
+  "common": {
+    "send": "Send",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "back": "Back",
+    "loading": "Loading...",
+    "error": "Error"
+  },
+  "voice": {
+    "startRecording": "Start Recording",
+    "stopRecording": "Stop Recording",
+    "listening": "Listening...",
+    "processing": "Processing your command...",
+    "tryAgain": "Try saying: Send 50 cedis to mama.family.eth"
+  },
+  "payment": {
+    "title": "Voice Payment",
+    "balance": "Your Balance",
+    "send": "Send {amount} {currency} to {recipient}",
+    "confirmPayment": "Confirm Payment",
+    "insufficientBalance": "Insufficient balance",
+    "success": "Payment successful!",
+    "failed": "Payment failed",
+    "viewTransaction": "View on Basescan"
+  },
+  "wallet": {
+    "connect": "Connect Wallet",
+    "disconnect": "Disconnect",
+    "wrongNetwork": "Wrong network. Please switch to BASE."
+  },
+  "errors": {
+    "commandNotUnderstood": "I couldn't understand that command",
+    "networkError": "Network error. Please check your connection.",
+    "transactionFailed": "Transaction failed. Please try again."
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "common": {
+    "send": "Firanṣẹ",
+    "cancel": "Fagile",
+    "confirm": "Ṣe atunyẹwo",
+    "back": "Padà",
+    "loading": "N ṣe iṣẹlẹ...",
+    "error": "Iṣẹlẹ"
+  },
+  "voice": {
+    "startRecording": "Bẹrẹ si iṣẹlẹ",
+    "stopRecording": "Ṣiṣẹ iṣẹlẹ",
+    "listening": "N gbọ...",
+    "processing": "N ṣe iṣẹlẹ àmìọ̀rọ̀ rẹ...",
+    "tryAgain": "Gbẹkẹle si: Firanṣẹ cedis 50 si mama.family.eth"
+  },
+  "payment": {
+    "title": "Iṣẹlẹ ọ̀rọ̀",
+    "balance": "Owó rẹ",
+    "send": "Firanṣẹ {amount} {currency} si {recipient}",
+    "insufficientBalance": "Owó kò tó",
+    "success": "Iṣẹlẹ ti jẹ!",
+    "failed": "Iṣẹlẹ kù"
+  }
+}

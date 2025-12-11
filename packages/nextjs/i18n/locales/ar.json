@@ -1,0 +1,26 @@
+{
+  "common": {
+    "send": "إرسال",
+    "cancel": "إلغاء",
+    "confirm": "تأكيد",
+    "back": "رجوع",
+    "loading": "جاري التحميل...",
+    "error": "خطأ"
+  },
+  "voice": {
+    "startRecording": "بدء التسجيل",
+    "stopRecording": "إيقاف التسجيل",
+    "listening": "استماع...",
+    "processing": "معالجة أمرك...",
+    "tryAgain": "حاول القول: أرسل 50 سيديس إلى mama.family.eth"
+  },
+  "payment": {
+    "title": "الدفع الصوتي",
+    "balance": "رصيدك",
+    "send": "إرسال {amount} {currency} إلى {recipient}",
+    "insufficientBalance": "رصيد غير كاف",
+    "success": "تم الدفع بنجاح!",
+    "failed": "فشل الدفع",
+    "viewTransaction": "عرض على Basescan"
+  }
+}

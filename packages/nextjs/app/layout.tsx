@@ -15,8 +15,8 @@ export const viewport = getViewport();
 const ScaffoldEthApp = ({ children }: { children: React.ReactNode }) => {
 
   return (
-    <html suppressHydrationWarning>
-      <body>
+    <html lang={i18n.language} dir={dir} suppressHydrationWarning>
+      <body className={`${dir === 'rtl' ? 'font-arabic' : 'font-sans'}`}>
         <ThemeProvider enableSystem>
           <ScaffoldEthAppWithProviders>
             {children}

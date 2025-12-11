@@ -1,0 +1,25 @@
+{
+  "common": {
+    "send": "Fa kɔ",
+    "cancel": "Gyae",
+    "confirm": "Gye to mu",
+    "back": "San kɔ akyiri",
+    "loading": "Ɛreloading...",
+    "error": "Mfomsoɔ"
+  },
+  "voice": {
+    "startRecording": "Fi aseɛ kyerɛw",
+    "stopRecording": "Gyae kyerɛw",
+    "listening": "Mete aso...",
+    "processing": "Merehwɛ wo asɛm...",
+    "tryAgain": "Sɛ ka sɛ: Fa cedis 50 kɔma mama.family.eth"
+  },
+  "payment": {
+    "title": "Nkrataa Sika Tua",
+    "balance": "Wo Sika",
+    "send": "Fa {amount} {currency} kɔma {recipient}",
+    "insufficientBalance": "Sika no sua",
+    "success": "Sika no akɔ!",
+    "failed": "Sika no ankɔ"
+  }
+}
