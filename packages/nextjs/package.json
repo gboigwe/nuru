@@ -46,6 +46,7 @@
     "usehooks-ts": "^3.1.0",
     "viem": "^2.37.9",
     "wagmi": "^2.16.4",
+    "xmtp-js": "^11.0.0",
     "zustand": "^5.0.0"
   },
   "devDependencies": {
