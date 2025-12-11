@@ -1,324 +1,337 @@
-# Testing Guide for Reown AppKit Migration
+# Testing Guide for Nuru VoicePay
 
-This document provides comprehensive testing procedures for the Reown AppKit integration in Nuru.
+## Overview
 
-## Build Status
+This document provides comprehensive information about the testing infrastructure for the Nuru VoicePay application.
 
-✅ **Production build successful**
-- All routes compiled successfully
-- No TypeScript errors in migration code
-- Static page generation working
-- Bundle size optimized (~50KB reduction from RainbowKit removal)
+## Test Coverage Goals
 
-## Pre-Testing Setup
+| Component | Target Coverage | Current Status |
+|-----------|----------------|----------------|
+| Smart Contracts | 95%+ | ✅ Implemented |
+| Payment Services | 90%+ | ✅ Implemented |
+| Voice Processing | 85%+ | ✅ Implemented |
+| React Components | 80%+ | 🚧 In Progress |
+| Utilities | 90%+ | 🚧 In Progress |
 
-### 1. Environment Variables
+## Running Tests
 
-Ensure your `.env` file has:
+### Smart Contract Tests
 
 ```bash
-# Required
-NEXT_PUBLIC_REOWN_PROJECT_ID=your_project_id_here
-NEXT_PUBLIC_ALCHEMY_API_KEY=your_alchemy_key_here
+# Run all contract tests
+cd packages/hardhat
+yarn test
 
-# Optional (for full feature testing)
-OPENAI_API_KEY=your_openai_key_here
-FILECOIN_SERVICE_PRIVATE_KEY=your_filecoin_key_here
+# Run with gas reporting
+yarn test:gas
+
+# Generate coverage report
+yarn test:coverage
 ```
 
-### 2. Start Development Server
+### Frontend Unit Tests
+
+```bash
+# Run all frontend tests
+cd packages/nextjs
+yarn test
+
+# Run tests in watch mode
+yarn test --watch
+
+# Run with coverage
+yarn test:coverage
+
+# Run tests with UI
+yarn test:ui
+```
+
+### Run All Tests
 
 ```bash
 # From project root
-yarn install
-yarn start
+yarn test
 ```
 
-Visit `http://localhost:3000`
+## Test Structure
 
----
+### Smart Contract Tests
 
-## Testing Checklist
+Located in `packages/hardhat/test/`
 
-### ✅ Core Wallet Functionality
+- **VoiceRemittance.test.ts**: Core contract functionality
+  - Deployment tests
+  - USDC payment initiation
+  - Payment validation
+  - ETH payments with ENS
+  - Payment completion and cancellation
+  - Admin functions
+  - Security features (rate limiting, daily limits)
 
-#### Connection Flow
-- [ ] Click "Connect Wallet" button
-- [ ] Modal opens with wallet options
-- [ ] Featured wallets appear first (MetaMask, Trust, Coinbase)
-- [ ] Can search for other wallets
-- [ ] Can scan QR code for mobile wallets
-- [ ] Connection succeeds with chosen wallet
-- [ ] Address displays correctly after connection
+- **MockERC20.sol**: Mock USDC token for testing
 
-#### Account Management
-- [ ] Click connected address to view account modal
-- [ ] Balance displays correctly
-- [ ] Can copy address
-- [ ] Avatar/blockie displays for address
-- [ ] "Disconnect" button works
+### Frontend Unit Tests
 
-#### Network Switching
-- [ ] Network button shows current network (Base Sepolia or Mainnet)
-- [ ] Click network button to open network selector
-- [ ] Can switch to Base Sepolia
-- [ ] Can switch to Mainnet
-- [ ] Network change reflects in UI immediately
-- [ ] Wallet prompts for network switch approval
+Located in `packages/nextjs/services/*/tests/`
 
-### ✅ Wallet Compatibility
+- **VoiceCommandProcessor.test.ts**: Voice command parsing
+  - Payment intent extraction
+  - Voice recognition error correction
+  - Command validation
+  - Multi-language support
 
-Test with these wallets:
+- **USDCPaymentHandler.test.ts**: USDC payment execution
+  - Balance checking
+  - Approval handling
+  - Payment execution
+  - Error handling
 
-#### Desktop Wallets
-- [ ] **MetaMask** - Browser extension
-  - Connection works
-  - Transaction signing works
-  - Network switching works
-- [ ] **Coinbase Wallet** - Browser extension
-  - Connection works
-  - Transaction signing works
-- [ ] **Brave Wallet** - Built-in Brave browser
-  - Connection works
-  - Transaction signing works
+- **ENSService.test.ts**: ENS resolution
+  - Forward resolution
+  - Reverse resolution
+  - Validation
+  - Voice command integration
 
-#### Mobile Wallets (via WalletConnect QR)
-- [ ] **Trust Wallet** - iOS/Android
-  - QR code scan works
-  - Connection established
-  - Transaction signing works
-- [ ] **MetaMask Mobile** - iOS/Android
-  - QR code scan works
-  - Connection established
-- [ ] **Rainbow Wallet** - iOS/Android
-  - QR code scan works
-  - Connection established
+- **CurrencyConverter.test.ts**: Currency conversion
+  - GHS to USDC conversion
+  - NGN to USDC conversion
+  - Exchange rate handling
+  - Formatting
 
-### ✅ Nuru Voice Features
+## Writing Tests
 
-#### Voice Payment Flow (with OpenAI API key set)
-- [ ] Microphone permission granted
-- [ ] Voice recording starts
-- [ ] Voice command processed (e.g., "Send 10 USDC to mama.family.eth")
-- [ ] Transaction details parsed correctly
-- [ ] Reown wallet modal opens for signature
-- [ ] Transaction succeeds on Base Sepolia
+### Smart Contract Test Example
 
-#### ENS Resolution (requires Mainnet connection)
-- [ ] Switch to Mainnet
-- [ ] Voice command with .eth name
-- [ ] ENS name resolves to address
-- [ ] Transaction preview shows resolved address
-- [ ] Can switch back to Base Sepolia for actual transaction
+```typescript
+import { expect } from "chai";
+import { ethers } from "hardhat";
 
-### ✅ UI/UX Testing
+describe("VoiceRemittance", () => {
+  let contract: VoiceRemittance;
+  let owner: SignerWithAddress;
 
-#### Responsive Design
-- [ ] Desktop (1920x1080)
-  - Connect button displays properly
-  - Network button visible
-  - Modals centered and readable
-- [ ] Tablet (768x1024)
-  - Connect button responsive
-  - Modals adapt to screen size
-- [ ] Mobile (375x667)
-  - Connect button text truncated appropriately
-  - Network button hidden on small screens
-  - Modals full-screen on mobile
+  beforeEach(async () => {
+    [owner] = await ethers.getSigners();
+    const Factory = await ethers.getContractFactory("VoiceRemittance");
+    contract = await Factory.deploy(usdcAddress);
+  });
 
-#### Theme Consistency
-- [ ] Nuru green accent (#12B76A) applied to buttons
-- [ ] Dark mode support (if enabled)
-- [ ] Hover states work correctly
-- [ ] Focus states visible (accessibility)
+  it("should initiate USDC payment", async () => {
+    const tx = await contract.initiateUSDCPayment(
+      recipient,
+      amount,
+      voiceHash,
+      metadata
+    );
+    
+    await expect(tx)
+      .to.emit(contract, "PaymentInitiated")
+      .withArgs(1, owner.address, "", amount, "USDC", voiceHash);
+  });
+});
+```
 
-### ✅ Error Handling
+### Frontend Test Example
 
-#### Missing Environment Variables
-- [ ] Start app without `NEXT_PUBLIC_REOWN_PROJECT_ID`
-- [ ] Error message displayed: "Please call createAppKit before using useAppKit hook"
-- [ ] Graceful degradation
+```typescript
+import { describe, it, expect, vi } from 'vitest';
 
-#### Network Errors
-- [ ] Disconnect internet
-- [ ] Attempt wallet connection
-- [ ] Appropriate error message shown
-- [ ] Reconnection works after internet restored
+describe('VoiceCommandProcessor', () => {
+  it('should parse payment command', async () => {
+    const result = await processor.extractPaymentIntent(
+      'send 50 cedis to mama.family.eth'
+    );
 
-#### Transaction Failures
-- [ ] Initiate transaction with insufficient balance
-- [ ] Error caught and displayed to user
-- [ ] Can retry after fixing issue
+    expect(result?.action).toBe('send_money');
+    expect(result?.amount).toBe('50');
+    expect(result?.recipient).toBe('mama.family.eth');
+  });
+});
+```
 
-### ✅ Browser Compatibility
+## CI/CD Integration
 
-#### Chrome/Chromium (Recommended)
-- [ ] All features work
-- [ ] No console errors
-- [ ] Performance acceptable
+### GitHub Actions Workflows
 
-#### Firefox
-- [ ] Wallet connection works
-- [ ] Transactions work
-- [ ] No console errors
+1. **test.yml**: Runs on every push and PR
+   - Smart contract tests
+   - Frontend unit tests
+   - Linting and type checking
 
-#### Safari
-- [ ] Wallet connection works
-- [ ] WalletConnect QR code works
-- [ ] Transactions work
+2. **coverage.yml**: Generates coverage reports
+   - Uploads to Codecov
+   - Comments on PRs with coverage changes
 
-#### Mobile Browsers
-- [ ] Chrome Mobile - Android
-- [ ] Safari - iOS
-- [ ] MetaMask Browser - iOS/Android
+### Coverage Requirements
 
----
+- Pull requests must maintain or improve coverage
+- Minimum 80% overall coverage required
+- Critical paths (payments, voice processing) require 90%+
 
-## Performance Testing
+## Test Categories
 
-### Bundle Size
+### Unit Tests
+- Test individual functions and components in isolation
+- Mock external dependencies
+- Fast execution (< 1 second per test)
+
+### Integration Tests
+- Test interaction between multiple components
+- Use real implementations where possible
+- Moderate execution time (1-5 seconds per test)
+
+### Contract Tests
+- Test smart contract functionality
+- Use Hardhat network for fast execution
+- Test edge cases and security features
+
+## Best Practices
+
+### 1. Test Naming
+```typescript
+// Good
+it('should reject payments with insufficient balance')
+
+// Bad
+it('test payment')
+```
+
+### 2. Arrange-Act-Assert Pattern
+```typescript
+it('should transfer USDC to recipient', async () => {
+  // Arrange
+  await usdcMock.mint(user1.address, amount);
+  await usdcMock.connect(user1).approve(contract.address, amount);
+  
+  // Act
+  await contract.initiateUSDCPayment(user2.address, amount, hash, metadata);
+  
+  // Assert
+  const balance = await usdcMock.balanceOf(user2.address);
+  expect(balance).to.equal(expectedAmount);
+});
+```
+
+### 3. Test Edge Cases
+- Zero amounts
+- Maximum amounts
+- Invalid addresses
+- Insufficient balances
+- Rate limiting
+- Reentrancy attacks
+
+### 4. Mock External Services
+```typescript
+vi.mock('../OpenAIService', () => ({
+  openAIService: {
+    extractPaymentIntent: vi.fn(),
+  },
+}));
+```
+
+## Debugging Tests
+
+### Hardhat Tests
 ```bash
-# Check bundle size after build
-cd packages/nextjs
-yarn build
+# Run specific test file
+yarn test test/VoiceRemittance.test.ts
 
-# Look for "First Load JS" metrics
-# Should be around ~103KB for main bundle
+# Run specific test
+yarn test --grep "should initiate USDC payment"
+
+# Enable console logs
+yarn test --logs
 ```
 
-**Expected Results:**
-- Total bundle: ~103KB (First Load JS)
-- Individual pages: <10KB (additional)
-- Reduction from RainbowKit: ~50KB
+### Vitest Tests
+```bash
+# Run specific test file
+yarn test VoiceCommandProcessor.test.ts
 
-### Load Times
-- [ ] Initial page load < 3 seconds
-- [ ] Wallet modal opens < 500ms
-- [ ] Network switch < 1 second
-- [ ] Transaction confirmation < 2 seconds
+# Run in watch mode
+yarn test --watch
 
-### Network Requests
-- [ ] RPC calls optimized (use Alchemy)
-- [ ] WalletConnect Cloud connection stable
-- [ ] No unnecessary polling
-
----
-
-## Debugging Tools
-
-### Browser Console
-Check for these common issues:
-
-```javascript
-// ✅ Good - No errors
-// Reown initialized successfully
-
-// ❌ Bad - Missing project ID
-Error: Please call createAppKit before using useAppKit hook
-
-// ❌ Bad - Network issue
-Error: Failed to fetch wallet list
+# Debug in VS Code
+# Add breakpoint and use "Debug Test" in test file
 ```
 
-### React DevTools
-- Check `WagmiProvider` is wrapping app
-- Verify `wagmiConfig` is passed correctly
-- Inspect hook state for connected wallet
+## Coverage Reports
 
-### Reown Dashboard
-Visit [cloud.reown.com](https://cloud.reown.com) to monitor:
-- Active connections
-- API usage
-- Error logs
-- Wallet analytics (if enabled)
+### Viewing Coverage
 
----
+```bash
+# Generate HTML coverage report
+cd packages/hardhat
+yarn test:coverage
 
-## Known Issues & Workarounds
+# Open in browser
+open coverage/index.html
+```
 
-### Issue 1: Pre-commit hooks failing
-**Cause:** TypeScript errors in unrelated files
-**Workaround:** Use `git commit --no-verify` for migration commits
+### Coverage Thresholds
 
-### Issue 2: Lockfile warnings during build
-**Cause:** Multiple lockfiles detected in monorepo
-**Impact:** None - build still succeeds
-**Fix:** Can be ignored or resolved by cleaning up extra lockfiles
+Configured in `vitest.config.ts`:
+```typescript
+coverage: {
+  thresholds: {
+    lines: 80,
+    functions: 80,
+    branches: 75,
+    statements: 80,
+  },
+}
+```
 
-### Issue 3: Burner wallet not supported
-**Cause:** Reown doesn't have built-in burner wallet like RainbowKit
-**Workaround:** Use MetaMask or Trust Wallet for development testing
-**Future:** Custom burner wallet implementation planned
+## Common Issues
 
----
+### Issue: Tests timeout
+**Solution**: Increase timeout in test file
+```typescript
+it('should complete payment', async () => {
+  // ...
+}).timeout(10000); // 10 seconds
+```
 
-## Test Environment Recommendations
+### Issue: Mock not working
+**Solution**: Ensure mock is defined before import
+```typescript
+vi.mock('./module', () => ({
+  // mock implementation
+}));
 
-### Development
-- Use **Base Sepolia** testnet
-- Get free testnet ETH from faucets
-- Enable verbose logging
+import { functionToTest } from './module';
+```
 
-### Staging
-- Test with **Mainnet** for ENS resolution
-- Use real wallet with small amounts
-- Test all wallet types
+### Issue: Contract deployment fails
+**Solution**: Check USDC mock is deployed first
+```typescript
+beforeEach(async () => {
+  usdcMock = await MockERC20.deploy("USDC", "USDC", 6);
+  await usdcMock.waitForDeployment();
+  
+  contract = await VoiceRemittance.deploy(await usdcMock.getAddress());
+});
+```
 
-### Production
-- Full regression testing
-- Performance monitoring
-- Error tracking (Sentry, etc.)
+## Resources
 
----
+- [Hardhat Testing Guide](https://hardhat.org/tutorial/testing-contracts)
+- [Vitest Documentation](https://vitest.dev/)
+- [Testing Library](https://testing-library.com/)
+- [Chai Matchers](https://ethereum-waffle.readthedocs.io/en/latest/matchers.html)
 
-## Success Criteria
+## Contributing
 
-For migration to be considered complete, all of the following must pass:
+When adding new features:
+1. Write tests first (TDD approach)
+2. Ensure all tests pass
+3. Maintain or improve coverage
+4. Update this documentation if needed
 
-- [x] Build completes without errors
-- [x] All wallet connections work (MetaMask, Coinbase, Trust, WalletConnect)
-- [x] Network switching works (Base Sepolia ↔ Mainnet)
-- [ ] Voice payments work end-to-end
-- [ ] ENS resolution works on Mainnet
-- [ ] No console errors in production build
-- [ ] Mobile responsiveness verified
-- [ ] Cross-browser testing passed
-- [ ] Documentation complete (README, REOWN_MIGRATION.md, TESTING.md)
+## Support
 
----
-
-## Reporting Issues
-
-If you encounter issues during testing:
-
-1. **Check documentation first**
-   - [REOWN_MIGRATION.md](./REOWN_MIGRATION.md#troubleshooting)
-   - [Reown Docs](https://docs.reown.com)
-
-2. **Gather information**
-   - Browser and version
-   - Wallet and version
-   - Network being used
-   - Console errors
-   - Steps to reproduce
-
-3. **Open GitHub issue**
-   - Use issue template
-   - Include all information above
-   - Tag with `reown-migration` label
-
----
-
-## Additional Resources
-
-- [Reown AppKit Documentation](https://docs.reown.com/appkit/react/core/installation)
-- [Reown Dashboard](https://cloud.reown.com)
-- [WalletConnect Explorer](https://walletconnect.com/explorer)
-- [Base Sepolia Faucet](https://www.coinbase.com/faucets/base-ethereum-sepolia-faucet)
-- [Alchemy Dashboard](https://dashboard.alchemy.com)
-
----
-
-**Last Updated:** November 2024
-**Migration Status:** ✅ Complete
-**Build Status:** ✅ Passing
+For testing questions or issues:
+- Open an issue on GitHub
+- Check existing test files for examples
+- Review CI/CD logs for failures

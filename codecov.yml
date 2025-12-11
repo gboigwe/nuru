@@ -1,0 +1,44 @@
+codecov:
+  require_ci_to_pass: yes
+  notify:
+    wait_for_ci: yes
+
+coverage:
+  precision: 2
+  round: down
+  range: "70...100"
+  status:
+    project:
+      default:
+        target: 80%
+        threshold: 2%
+        if_ci_failed: error
+    patch:
+      default:
+        target: 75%
+        threshold: 5%
+
+comment:
+  layout: "reach,diff,flags,tree"
+  behavior: default
+  require_changes: no
+
+flags:
+  contracts:
+    paths:
+      - packages/hardhat/contracts/
+    carryforward: true
+  frontend:
+    paths:
+      - packages/nextjs/services/
+      - packages/nextjs/components/
+    carryforward: true
+
+ignore:
+  - "**/*.test.ts"
+  - "**/*.test.tsx"
+  - "**/test/**"
+  - "**/__tests__/**"
+  - "**/node_modules/**"
+  - "**/.next/**"
+  - "**/coverage/**"

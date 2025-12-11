@@ -5,6 +5,10 @@
 
 ![Nuru Logo](https://img.shields.io/badge/Nuru-Light%20up%20your%20payments-12B76A?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJMMTMuMDkgOC4yNkwyMCA5TDEzLjA5IDE1Ljc0TDEyIDIyTDEwLjkxIDE1Ljc0TDQgOUwxMC45MSA4LjI2TDEyIDJaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K)
 
+[![Tests](https://github.com/gboigwe/nuru/actions/workflows/test.yml/badge.svg)](https://github.com/gboigwe/nuru/actions/workflows/test.yml)
+[![Coverage](https://codecov.io/gh/gboigwe/nuru/branch/main/graph/badge.svg)](https://codecov.io/gh/gboigwe/nuru)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 ## 🌍 The Vision
 
 **"Making crypto remittances as natural as conversation"**
@@ -126,11 +130,40 @@ No manual configuration needed!
 
 ## 📚 Documentation
 
+- **[Testing Guide](./docs/TESTING.md)** - Comprehensive testing documentation and best practices
 - **[Voice Recognition](./packages/nextjs/services/voice/README.md)** - Multi-tier voice recognition with Web Speech API and Whisper
 - **[Reown Migration Guide](./docs/REOWN_MIGRATION.md)** - Complete guide for the RainbowKit to Reown AppKit migration
 - **[VoicePay Components](./packages/nextjs/components/voicepay/README.md)** - Real payment component documentation
 - **[Scaffold-ETH 2 Docs](https://docs.scaffoldeth.io)** - Technical details and guides
 - **[Reown AppKit Docs](https://docs.reown.com/appkit/react/core/installation)** - Wallet connection documentation
+
+## 🧪 Testing
+
+Nuru has comprehensive test coverage across smart contracts and frontend:
+
+```bash
+# Run all tests
+yarn test
+
+# Run contract tests
+cd packages/hardhat && yarn test
+
+# Run frontend tests
+cd packages/nextjs && yarn test
+
+# Generate coverage report
+yarn test:coverage
+```
+
+**Test Coverage:**
+- ✅ Smart Contract Tests (VoiceRemittance, USDC payments, security)
+- ✅ Voice Command Processing (multi-language, error correction)
+- ✅ USDC Payment Handler (balance checks, approvals, execution)
+- ✅ ENS Resolution (forward/reverse, validation)
+- ✅ Currency Conversion (GHS/NGN to USDC)
+- ✅ CI/CD Integration (GitHub Actions, Codecov)
+
+See [Testing Guide](./docs/TESTING.md) for detailed information.
 
 ## 🏗️ Project Structure
 

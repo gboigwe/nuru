@@ -1,0 +1,567 @@
+import { expect } from "chai";
+import { ethers } from "hardhat";
+import { VoiceRemittance, MockERC20 } from "../typechain-types";
+import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
+import { time } from "@nomicfoundation/hardhat-network-helpers";
+
+describe("VoiceRemittance", () => {
+  let contract: VoiceRemittance;
+  let owner: SignerWithAddress;
+  let user1: SignerWithAddress;
+  let user2: SignerWithAddress;
+  let user3: SignerWithAddress;
+  let usdcMock: MockERC20;
+
+  beforeEach(async () => {
+    [owner, user1, user2, user3] = await ethers.getSigners();
+
+    // Deploy mock USDC with 6 decimals
+    const MockERC20Factory = await ethers.getContractFactory("MockERC20");
+    usdcMock = await MockERC20Factory.deploy("USD Coin", "USDC", 6);
+    await usdcMock.waitForDeployment();
+
+    // Deploy VoiceRemittance
+    const VoiceRemittanceFactory = await ethers.getContractFactory("VoiceRemittance");
+    contract = await VoiceRemittanceFactory.deploy(await usdcMock.getAddress());
+    await contract.waitForDeployment();
+  });
+
+  describe("Deployment", () => {
+    it("should deploy with correct USDC address", async () => {
+      expect(await contract.usdcToken()).to.equal(await usdcMock.getAddress());
+    });
+
+    it("should set deployer as owner", async () => {
+      expect(await contract.owner()).to.equal(owner.address);
+    });
+
+    it("should initialize with zero orders", async () => {
+      expect(await contract.getTotalOrders()).to.equal(0);
+    });
+
+    it("should set correct platform fee", async () => {
+      expect(await contract.platformFeePercent()).to.equal(50); // 0.5%
+    });
+  });
+
+  describe("USDC Payment Initiation", () => {
+    const amount = ethers.parseUnits("100", 6); // 100 USDC
+
+    beforeEach(async () => {
+      // Mint USDC to user1
+      await usdcMock.mint(user1.address, amount);
+      // Approve contract to spend USDC
+      await usdcMock.connect(user1).approve(await contract.getAddress(), amount);
+    });
+
+    it("should initiate USDC payment with voice proof", async () => {
+      const tx = await contract.connect(user1).initiateUSDCPayment(
+        user2.address,
+        amount,
+        "ipfs://QmVoiceHash123",
+        JSON.stringify({ language: "en", confidence: 0.95 })
+      );
+
+      const receipt = await tx.wait();
+      expect(receipt?.status).to.equal(1);
+
+      // Verify order was created
+      expect(await contract.getTotalOrders()).to.equal(1);
+    });
+
+    it("should emit PaymentInitiated event", async () => {
+      await expect(
+        contract.connect(user1).initiateUSDCPayment(
+          user2.address,
+          amount,
+          "ipfs://QmVoiceHash123",
+          "{}"
+        )
+      )
+        .to.emit(contract, "PaymentInitiated")
+        .withArgs(1, user1.address, "", amount, "USDC", "ipfs://QmVoiceHash123");
+    });
+
+    it("should emit PaymentCompleted event", async () => {
+      await expect(
+        contract.connect(user1).initiateUSDCPayment(
+          user2.address,
+          amount,
+          "ipfs://QmVoiceHash123",
+          "{}"
+        )
+      ).to.emit(contract, "PaymentCompleted");
+    });
+
+    it("should transfer USDC to recipient minus fee", async () => {
+      const balanceBefore = await usdcMock.balanceOf(user2.address);
+      
+      await contract.connect(user1).initiateUSDCPayment(
+        user2.address,
+        amount,
+        "ipfs://hash",
+        "{}"
+      );
+
+      const fee = (amount * 50n) / 10000n; // 0.5% fee
+      const netAmount = amount - fee;
+      const balanceAfter = await usdcMock.balanceOf(user2.address);
+      
+      expect(balanceAfter - balanceBefore).to.equal(netAmount);
+    });
+
+    it("should transfer fee to owner", async () => {
+      const ownerBalanceBefore = await usdcMock.balanceOf(owner.address);
+      
+      await contract.connect(user1).initiateUSDCPayment(
+        user2.address,
+        amount,
+        "ipfs://hash",
+        "{}"
+      );
+
+      const fee = (amount * 50n) / 10000n;
+      const ownerBalanceAfter = await usdcMock.balanceOf(owner.address);
+      
+      expect(ownerBalanceAfter - ownerBalanceBefore).to.equal(fee);
+    });
+  });
+
+  describe("USDC Payment Validation", () => {
+    const amount = ethers.parseUnits("100", 6);
+
+    it("should fail if insufficient USDC allowance", async () => {
+      await usdcMock.mint(user1.address, amount);
+      // No approval given
+
+      await expect(
+        contract.connect(user1).initiateUSDCPayment(
+          user2.address,
+          amount,
+          "ipfs://hash",
+          "{}"
+        )
+      ).to.be.revertedWith("USDC transfer failed - check allowance");
+    });
+
+    it("should fail if insufficient USDC balance", async () => {
+      await usdcMock.connect(user1).approve(await contract.getAddress(), amount);
+      // No USDC minted
+
+      await expect(
+        contract.connect(user1).initiateUSDCPayment(
+          user2.address,
+          amount,
+          "ipfs://hash",
+          "{}"
+        )
+      ).to.be.revertedWith("USDC transfer failed - check allowance");
+    });
+
+    it("should fail if recipient is zero address", async () => {
+      await usdcMock.mint(user1.address, amount);
+      await usdcMock.connect(user1).approve(await contract.getAddress(), amount);
+
+      await expect(
+        contract.connect(user1).initiateUSDCPayment(
+          ethers.ZeroAddress,
+          amount,
+          "ipfs://hash",
+          "{}"
+        )
+      ).to.be.revertedWith("Invalid recipient address");
+    });
+
+    it("should fail if sending to self", async () => {
+      await usdcMock.mint(user1.address, amount);
+      await usdcMock.connect(user1).approve(await contract.getAddress(), amount);
+
+      await expect(
+        contract.connect(user1).initiateUSDCPayment(
+          user1.address,
+          amount,
+          "ipfs://hash",
+          "{}"
+        )
+      ).to.be.revertedWith("Cannot send to yourself");
+    });
+
+    it("should fail if sending to contract address", async () => {
+      await usdcMock.mint(user1.address, amount);
+      await usdcMock.connect(user1).approve(await contract.getAddress(), amount);
+
+      await expect(
+        contract.connect(user1).initiateUSDCPayment(
+          await contract.getAddress(),
+          amount,
+          "ipfs://hash",
+          "{}"
+        )
+      ).to.be.revertedWith("Cannot send to contract");
+    });
+
+    it("should fail if amount is zero", async () => {
+      await usdcMock.mint(user1.address, amount);
+      await usdcMock.connect(user1).approve(await contract.getAddress(), amount);
+
+      await expect(
+        contract.connect(user1).initiateUSDCPayment(
+          user2.address,
+          0,
+          "ipfs://hash",
+          "{}"
+        )
+      ).to.be.revertedWith("Payment amount must be greater than 0");
+    });
+
+    it("should fail if amount too small", async () => {
+      const tinyAmount = 999n; // Less than 1000 (0.001 USDC)
+      await usdcMock.mint(user1.address, tinyAmount);
+      await usdcMock.connect(user1).approve(await contract.getAddress(), tinyAmount);
+
+      await expect(
+        contract.connect(user1).initiateUSDCPayment(
+          user2.address,
+          tinyAmount,
+          "ipfs://hash",
+          "{}"
+        )
+      ).to.be.revertedWith("Amount too small");
+    });
+
+    it("should fail if voice hash is empty", async () => {
+      await usdcMock.mint(user1.address, amount);
+      await usdcMock.connect(user1).approve(await contract.getAddress(), amount);
+
+      await expect(
+        contract.connect(user1).initiateUSDCPayment(
+          user2.address,
+          amount,
+          "",
+          "{}"
+        )
+      ).to.be.revertedWith("Voice hash cannot be empty");
+    });
+  });
+
+  describe("ETH Payment with ENS", () => {
+    const amount = ethers.parseEther("1");
+
+    it("should initiate ETH payment with ENS name", async () => {
+      const tx = await contract.connect(user1).initiatePayment(
+        "mama.family.eth",
+        "ipfs://QmVoiceHash",
+        "ETH",
+        JSON.stringify({ language: "en" }),
+        { value: amount }
+      );
+
+      expect(await contract.getTotalOrders()).to.equal(1);
+      const order = await contract.getOrder(1);
+      expect(order.recipientENS).to.equal("mama.family.eth");
+      expect(order.amount).to.equal(amount);
+      expect(order.completed).to.be.false;
+    });
+
+    it("should emit PaymentInitiated event with ENS", async () => {
+      await expect(
+        contract.connect(user1).initiatePayment(
+          "test.eth",
+          "ipfs://hash",
+          "ETH",
+          "{}",
+          { value: amount }
+        )
+      )
+        .to.emit(contract, "PaymentInitiated")
+        .withArgs(1, user1.address, "test.eth", amount, "ETH", "ipfs://hash");
+    });
+
+    it("should fail if ENS name is empty", async () => {
+      await expect(
+        contract.connect(user1).initiatePayment(
+          "",
+          "ipfs://hash",
+          "ETH",
+          "{}",
+          { value: amount }
+        )
+      ).to.be.revertedWith("ENS name cannot be empty");
+    });
+
+    it("should fail if ENS name too long", async () => {
+      const longENS = "a".repeat(257) + ".eth";
+      await expect(
+        contract.connect(user1).initiatePayment(
+          longENS,
+          "ipfs://hash",
+          "ETH",
+          "{}",
+          { value: amount }
+        )
+      ).to.be.revertedWith("ENS name too long");
+    });
+
+    it("should fail if payment amount is zero", async () => {
+      await expect(
+        contract.connect(user1).initiatePayment(
+          "test.eth",
+          "ipfs://hash",
+          "ETH",
+          "{}",
+          { value: 0 }
+        )
+      ).to.be.revertedWith("Payment amount must be greater than 0");
+    });
+
+    it("should update user profile on payment", async () => {
+      await contract.connect(user1).initiatePayment(
+        "test.eth",
+        "ipfs://hash",
+        "ETH",
+        "{}",
+        { value: amount }
+      );
+
+      const profile = await contract.getUserProfile(user1.address);
+      expect(profile.totalSent).to.equal(amount);
+      expect(profile.transactionCount).to.equal(1);
+    });
+  });
+
+  describe("Payment Completion", () => {
+    const amount = ethers.parseEther("1");
+    let orderId: number;
+
+    beforeEach(async () => {
+      const tx = await contract.connect(user1).initiatePayment(
+        "test.eth",
+        "ipfs://hash",
+        "ETH",
+        "{}",
+        { value: amount }
+      );
+      await tx.wait();
+      orderId = 1;
+    });
+
+    it("should complete payment and transfer funds", async () => {
+      const balanceBefore = await ethers.provider.getBalance(user2.address);
+      
+      await contract.completePayment(orderId, user2.address);
+      
+      const order = await contract.getOrder(orderId);
+      expect(order.completed).to.be.true;
+      expect(order.recipientAddress).to.equal(user2.address);
+      
+      const balanceAfter = await ethers.provider.getBalance(user2.address);
+      const fee = (amount * 50n) / 10000n;
+      const netAmount = amount - fee;
+      expect(balanceAfter - balanceBefore).to.equal(netAmount);
+    });
+
+    it("should emit PaymentCompleted event", async () => {
+      await expect(
+        contract.completePayment(orderId, user2.address)
+      ).to.emit(contract, "PaymentCompleted");
+    });
+
+    it("should update recipient profile", async () => {
+      await contract.completePayment(orderId, user2.address);
+      
+      const profile = await contract.getUserProfile(user2.address);
+      const fee = (amount * 50n) / 10000n;
+      const netAmount = amount - fee;
+      expect(profile.totalReceived).to.equal(netAmount);
+    });
+
+    it("should fail if order already completed", async () => {
+      await contract.completePayment(orderId, user2.address);
+      
+      await expect(
+        contract.completePayment(orderId, user2.address)
+      ).to.be.revertedWith("Order already completed");
+    });
+
+    it("should fail if recipient is zero address", async () => {
+      await expect(
+        contract.completePayment(orderId, ethers.ZeroAddress)
+      ).to.be.revertedWith("Invalid recipient address");
+    });
+  });
+
+  describe("Payment Cancellation", () => {
+    const amount = ethers.parseEther("1");
+    let orderId: number;
+
+    beforeEach(async () => {
+      const tx = await contract.connect(user1).initiatePayment(
+        "test.eth",
+        "ipfs://hash",
+        "ETH",
+        "{}",
+        { value: amount }
+      );
+      await tx.wait();
+      orderId = 1;
+    });
+
+    it("should allow sender to cancel pending payment", async () => {
+      const balanceBefore = await ethers.provider.getBalance(user1.address);
+      
+      const tx = await contract.connect(user1).cancelPayment(orderId, "Changed my mind");
+      const receipt = await tx.wait();
+      
+      const order = await contract.getOrder(orderId);
+      expect(order.status).to.equal(2); // cancelled
+    });
+
+    it("should emit PaymentCancelled event", async () => {
+      await expect(
+        contract.connect(user1).cancelPayment(orderId, "Test reason")
+      )
+        .to.emit(contract, "PaymentCancelled")
+        .withArgs(orderId, user1.address, "Test reason");
+    });
+
+    it("should fail if not the sender", async () => {
+      await expect(
+        contract.connect(user2).cancelPayment(orderId, "Not my order")
+      ).to.be.revertedWith("Not the order sender");
+    });
+
+    it("should fail if order already completed", async () => {
+      await contract.completePayment(orderId, user2.address);
+      
+      await expect(
+        contract.connect(user1).cancelPayment(orderId, "Too late")
+      ).to.be.revertedWith("Cannot cancel completed order");
+    });
+  });
+
+  describe("Admin Functions", () => {
+    it("should allow owner to pause contract", async () => {
+      await contract.pause();
+      expect(await contract.paused()).to.be.true;
+    });
+
+    it("should prevent non-owner from pausing", async () => {
+      await expect(
+        contract.connect(user1).pause()
+      ).to.be.revertedWithCustomError(contract, "OwnableUnauthorizedAccount");
+    });
+
+    it("should allow owner to unpause contract", async () => {
+      await contract.pause();
+      await contract.unpause();
+      expect(await contract.paused()).to.be.false;
+    });
+
+    it("should prevent payments when paused", async () => {
+      await contract.pause();
+      
+      await expect(
+        contract.connect(user1).initiatePayment(
+          "test.eth",
+          "ipfs://hash",
+          "ETH",
+          "{}",
+          { value: ethers.parseEther("1") }
+        )
+      ).to.be.revertedWithCustomError(contract, "EnforcedPause");
+    });
+
+    it("should allow owner to queue fee change", async () => {
+      const newFee = 100; // 1%
+      await expect(
+        contract.queueFeeChange(newFee)
+      ).to.emit(contract, "FeeChangeQueued");
+    });
+
+    it("should prevent fee change above maximum", async () => {
+      const tooHighFee = 301; // 3.01%
+      await expect(
+        contract.queueFeeChange(tooHighFee)
+      ).to.be.revertedWith("Fee too high");
+    });
+
+    it("should execute fee change after timelock", async () => {
+      const newFee = 100;
+      await contract.queueFeeChange(newFee);
+      
+      // Fast forward 7 days
+      await time.increase(7 * 24 * 60 * 60);
+      
+      await expect(
+        contract.executeFeeChange(newFee)
+      ).to.emit(contract, "FeeChangeExecuted");
+      
+      expect(await contract.platformFeePercent()).to.equal(newFee);
+    });
+
+    it("should fail to execute fee change before timelock", async () => {
+      const newFee = 100;
+      await contract.queueFeeChange(newFee);
+      
+      await expect(
+        contract.executeFeeChange(newFee)
+      ).to.be.revertedWith("Timelock active");
+    });
+  });
+
+  describe("Security Features", () => {
+    it("should enforce rate limiting", async () => {
+      const amount = ethers.parseUnits("100", 6);
+      await usdcMock.mint(user1.address, amount * 2n);
+      await usdcMock.connect(user1).approve(await contract.getAddress(), amount * 2n);
+
+      // First payment should succeed
+      await contract.connect(user1).initiateUSDCPayment(
+        user2.address,
+        amount,
+        "ipfs://hash1",
+        "{}"
+      );
+
+      // Second immediate payment should fail
+      await expect(
+        contract.connect(user1).initiateUSDCPayment(
+          user2.address,
+          amount,
+          "ipfs://hash2",
+          "{}"
+        )
+      ).to.be.revertedWith("Rate limit");
+    });
+
+    it("should enforce daily limits", async () => {
+      const largeAmount = ethers.parseUnits("60000", 6); // Exceeds 50k daily limit
+      await usdcMock.mint(user1.address, largeAmount);
+      await usdcMock.connect(user1).approve(await contract.getAddress(), largeAmount);
+
+      await expect(
+        contract.connect(user1).initiateUSDCPayment(
+          user2.address,
+          largeAmount,
+          "ipfs://hash",
+          "{}"
+        )
+      ).to.be.revertedWith("Exceeds daily limit");
+    });
+
+    it("should enforce per-transaction limits", async () => {
+      const hugeAmount = ethers.parseUnits("15000", 6); // Exceeds 10k per-tx limit
+      await usdcMock.mint(user1.address, hugeAmount);
+      await usdcMock.connect(user1).approve(await contract.getAddress(), hugeAmount);
+
+      await expect(
+        contract.connect(user1).initiateUSDCPayment(
+          user2.address,
+          hugeAmount,
+          "ipfs://hash",
+          "{}"
+        )
+      ).to.be.revertedWith("Exceeds per-tx limit");
+    });
+  });
+});
