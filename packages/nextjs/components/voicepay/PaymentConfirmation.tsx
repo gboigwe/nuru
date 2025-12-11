@@ -52,6 +52,25 @@ export const PaymentConfirmation: React.FC<PaymentConfirmationProps> = ({
     onConfirm();
   };
 
+  // Check balance
+  const balanceCheck = useBalanceCheck(intent.amount);
+
+  // Handle successful funding
+  const handleFundingSuccess = async () => {
+    // Wait for balance to update
+    await new Promise(resolve => setTimeout(resolve, 3000));
+
+    // Refetch balance
+    balanceCheck.refetch();
+
+    // Auto-retry payment if balance is now sufficient
+    setTimeout(() => {
+      if (balanceCheck.hasEnough) {
+        onConfirm();
+      }
+    }, 1000);
+  };
+
   // Format amount for display
   const formatAmount = (amount: string, currency: string): string => {
     const numAmount = parseFloat(amount);
@@ -74,6 +93,44 @@ export const PaymentConfirmation: React.FC<PaymentConfirmationProps> = ({
     }
   };
 
+
+  // Show insufficient balance prompt if needed
+  if (!balanceCheck.isLoading && !balanceCheck.hasEnough && ensResolution?.isValid) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="bg-white rounded-2xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+          {/* Header */}
+          <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-6 rounded-t-2xl">
+            <div className="text-center">
+              <div className="text-4xl mb-2">💰</div>
+              <h2 className="text-xl font-bold">Add Funds</h2>
+              <p className="text-blue-100 text-sm">You need more USDC to complete this payment</p>
+            </div>
+          </div>
+
+          {/* Insufficient Balance Content */}
+          <div className="p-6">
+            <InsufficientBalancePrompt
+              requiredAmount={balanceCheck.requiredAmount}
+              currentBalance={balanceCheck.currentBalance}
+              shortfall={balanceCheck.shortfall}
+              onFundingSuccess={handleFundingSuccess}
+            />
+          </div>
+
+          {/* Cancel Button */}
+          <div className="p-6 border-t border-gray-200">
+            <button
+              onClick={onCancel}
+              className="w-full py-3 px-6 rounded-xl font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"
+            >
+              Cancel Payment
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">

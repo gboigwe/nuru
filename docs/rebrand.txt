@@ -1,4 +1,4 @@
-Here’s a crisp, developer-ready **rebranding brief** you can drop into Claude Code to drive the rename and rollout from the current “VoicePay Africa” concept to **Nuru**. I’ve tailored it to your ETHAccra build, Ghana-first launch, and Nigeria scale-up, keeping your original MVP scope in view.
+Here’s a crisp, developer-ready **rebranding brief** to drive the rename and rollout from the current “VoicePay Africa” concept to **Nuru**. I’ve tailored it to your ETHAccra build, Ghana-first launch, and Nigeria scale-up, keeping your original MVP scope in view.
 
 ---
 
@@ -33,7 +33,7 @@ Rebrand the product to **Nuru** (meaning “light”) to position it as the simp
 
 ---
 
-## 3) Visual Identity (specs Claude can apply across assets)
+## 3) Visual Identity (specs to apply across assets)
 
 **Palette**
 
@@ -133,7 +133,7 @@ Rebrand the product to **Nuru** (meaning “light”) to position it as the simp
 
 ---
 
-## 6) Asset Tasks for Claude to Generate
+## 6) Asset Tasks to Generate
 
 * Logo pack (SVG + PNG):
 
