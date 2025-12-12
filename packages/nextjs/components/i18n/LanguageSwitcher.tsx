@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslation } from 'react-i18next';
-import { languages, type Language } from '~/i18n/config';
+import { languages, type Language, isRTL } from '~~/i18n/config';
 import { Menu } from '@headlessui/react';
 
 export const LanguageSwitcher = () => {
