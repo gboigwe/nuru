@@ -6008,6 +6008,7 @@ __metadata:
     next: ^15.2.3
     next-nprogress-bar: ^2.3.13
     next-themes: ^0.3.0
+    openai: ^4.20.0
     postcss: ^8.4.45
     prettier: ^3.5.3
     qrcode.react: ^4.0.1
@@ -8102,6 +8103,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/node-fetch@npm:^2.6.4":
+  version: 2.6.13
+  resolution: "@types/node-fetch@npm:2.6.13"
+  dependencies:
+    "@types/node": "*"
+    form-data: ^4.0.4
+  checksum: e4b4db3a8c23309dadf0beb87e88882af1157f0c08b7b76027ac40add6ed363c924e2fa275f42ae45eacf776b25ed439d14400d9d6372eb39634dd4c7e7e1ad8
+  languageName: node
+  linkType: hard
+
 "@types/node@npm:*, @types/node@npm:>=13.7.0, @types/node@npm:^24.10.1":
   version: 24.10.1
   resolution: "@types/node@npm:24.10.1"
@@ -8134,7 +8145,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:^18.19.50":
+"@types/node@npm:^18.11.18, @types/node@npm:^18.19.50":
   version: 18.19.130
   resolution: "@types/node@npm:18.19.130"
   dependencies:
@@ -10091,7 +10102,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"agentkeepalive@npm:^4.5.0":
+"agentkeepalive@npm:^4.2.1, agentkeepalive@npm:^4.5.0":
   version: 4.6.0
   resolution: "agentkeepalive@npm:4.6.0"
   dependencies:
@@ -14438,6 +14449,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"form-data-encoder@npm:1.7.2":
+  version: 1.7.2
+  resolution: "form-data-encoder@npm:1.7.2"
+  checksum: aeebd87a1cb009e13cbb5e4e4008e6202ed5f6551eb6d9582ba8a062005178907b90f4887899d3c993de879159b6c0c940af8196725b428b4248cec5af3acf5f
+  languageName: node
+  linkType: hard
+
 "form-data-encoder@npm:^4.0.2":
   version: 4.1.0
   resolution: "form-data-encoder@npm:4.1.0"
@@ -14455,6 +14473,16 @@ __metadata:
     hasown: ^2.0.2
     mime-types: ^2.1.12
   checksum: af8328413c16d0cded5fccc975a44d227c5120fd46a9e81de8acf619d43ed838414cc6d7792195b30b248f76a65246949a129a4dadd148721948f90cd6d4fb69
+  languageName: node
+  linkType: hard
+
+"formdata-node@npm:^4.3.2":
+  version: 4.4.1
+  resolution: "formdata-node@npm:4.4.1"
+  dependencies:
+    node-domexception: 1.0.0
+    web-streams-polyfill: 4.0.0-beta.3
+  checksum: d91d4f667cfed74827fc281594102c0dabddd03c9f8b426fc97123eedbf73f5060ee43205d89284d6854e2fc5827e030cd352ef68b93beda8decc2d72128c576
   languageName: node
   linkType: hard
 
@@ -18470,6 +18498,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"node-domexception@npm:1.0.0":
+  version: 1.0.0
+  resolution: "node-domexception@npm:1.0.0"
+  checksum: ee1d37dd2a4eb26a8a92cd6b64dfc29caec72bff5e1ed9aba80c294f57a31ba4895a60fd48347cf17dd6e766da0ae87d75657dfd1f384ebfa60462c2283f5c7f
+  languageName: node
+  linkType: hard
+
 "node-emoji@npm:^1.10.0":
   version: 1.11.0
   resolution: "node-emoji@npm:1.11.0"
@@ -19083,6 +19118,31 @@ __metadata:
     is-docker: ^2.0.0
     is-wsl: ^2.1.1
   checksum: 3333900ec0e420d64c23b831bc3467e57031461d843c801f569b2204a1acc3cd7b3ec3c7897afc9dde86491dfa289708eb92bba164093d8bd88fb2c231843c91
+  languageName: node
+  linkType: hard
+
+"openai@npm:^4.20.0":
+  version: 4.104.0
+  resolution: "openai@npm:4.104.0"
+  dependencies:
+    "@types/node": ^18.11.18
+    "@types/node-fetch": ^2.6.4
+    abort-controller: ^3.0.0
+    agentkeepalive: ^4.2.1
+    form-data-encoder: 1.7.2
+    formdata-node: ^4.3.2
+    node-fetch: ^2.6.7
+  peerDependencies:
+    ws: ^8.18.0
+    zod: ^3.23.8
+  peerDependenciesMeta:
+    ws:
+      optional: true
+    zod:
+      optional: true
+  bin:
+    openai: bin/cli
+  checksum: 2bd3ba14a37a3421703d9108bdb61be38d2555fbefbfb491c890d3c47cef72f5c9fefada78f33923f86e5d2ada86bcb3a3c04662f16e85f735a2c1ecd0fa031e
   languageName: node
   linkType: hard
 
@@ -24262,6 +24322,13 @@ __metadata:
     ms: ^3.0.0-canary.1
     supports-color: ^10.0.0
   checksum: a714ce54c2592a14a72b05a10c19d47bfdae3de362654a7c3d02fa916928060d9fe5fce1fbf5c9efa562a77ee6aa0c3c354a4fda00564e4697a34e6fc1f3f61e
+  languageName: node
+  linkType: hard
+
+"web-streams-polyfill@npm:4.0.0-beta.3":
+  version: 4.0.0-beta.3
+  resolution: "web-streams-polyfill@npm:4.0.0-beta.3"
+  checksum: dfec1fbf52b9140e4183a941e380487b6c3d5d3838dd1259be81506c1c9f2abfcf5aeb670aeeecfd9dff4271a6d8fef931b193c7bedfb42542a3b05ff36c0d16
   languageName: node
   linkType: hard
 
