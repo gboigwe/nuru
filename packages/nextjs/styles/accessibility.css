@@ -56,3 +56,164 @@
 .bg-blue-600 {
   background-color: #2563EB; /* 4.5:1 contrast with white */
 }
+
+/* Skip to main content link */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: #3B82F6;
+  color: white;
+  padding: 8px 16px;
+  text-decoration: none;
+  z-index: 100;
+}
+
+.skip-link:focus {
+  top: 4px;
+  left: 4px;
+}
+
+/* Keyboard navigation highlights */
+[tabindex]:focus,
+button:focus,
+a:focus,
+input:focus,
+select:focus,
+textarea:focus {
+  outline: 3px solid #3B82F6;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+}
+
+/* High contrast text */
+@media (prefers-contrast: high) {
+  body {
+    background: white;
+    color: black;
+  }
+
+  .text-muted,
+  .text-gray-500,
+  .text-gray-600 {
+    color: #000;
+  }
+
+  button,
+  .btn {
+    border: 2px solid currentColor;
+  }
+}
+
+/* Dark mode improvements */
+@media (prefers-color-scheme: dark) {
+  *:focus-visible {
+    outline-color: #60A5FA;
+  }
+}
+
+/* RTL Support */
+[dir="rtl"] {
+  direction: rtl;
+  text-align: right;
+}
+
+[dir="rtl"] .text-left {
+  text-align: right;
+}
+
+[dir="rtl"] .text-right {
+  text-align: left;
+}
+
+[dir="rtl"] .float-left {
+  float: right;
+}
+
+[dir="rtl"] .float-right {
+  float: left;
+}
+
+/* Font size utilities */
+.text-base {
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.text-lg-accessible {
+  font-size: 1.125rem;
+  line-height: 1.6;
+}
+
+.text-xl-accessible {
+  font-size: 1.25rem;
+  line-height: 1.7;
+}
+
+/* Improved touch targets for mobile accessibility */
+@media (hover: none) and (pointer: coarse) {
+  button,
+  a,
+  input[type="button"],
+  input[type="submit"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Error states with better contrast */
+.error-message {
+  color: #DC2626;
+  background-color: #FEE2E2;
+  border: 2px solid #DC2626;
+  padding: 12px;
+  border-radius: 4px;
+}
+
+@media (prefers-contrast: high) {
+  .error-message {
+    background-color: #FEE2E2;
+    color: #7F1D1D;
+    border-color: #7F1D1D;
+  }
+}
+
+/* Success states with better contrast */
+.success-message {
+  color: #059669;
+  background-color: #D1FAE5;
+  border: 2px solid #059669;
+  padding: 12px;
+  border-radius: 4px;
+}
+
+@media (prefers-contrast: high) {
+  .success-message {
+    background-color: #D1FAE5;
+    color: #064E3B;
+    border-color: #064E3B;
+  }
+}
+
+/* Loading states */
+.loading-indicator {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(59, 130, 246, 0.3);
+  border-radius: 50%;
+  border-top-color: #3B82F6;
+  animation: spinner 0.6s linear infinite;
+}
+
+@keyframes spinner {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loading-indicator {
+    animation: none;
+    border-top-color: #3B82F6;
+    border-right-color: #3B82F6;
+  }
+}
