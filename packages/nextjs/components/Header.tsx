@@ -25,6 +25,10 @@ export const menuLinks: HeaderMenuLink[] = [
     label: "Messages",
     href: "/messages",
   },
+  {
+    label: "Receipts",
+    href: "/receipts",
+  },
 ];
 
 export const HeaderMenuLinks = () => {
