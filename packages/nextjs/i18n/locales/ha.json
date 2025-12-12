@@ -1,0 +1,25 @@
+{
+  "common": {
+    "send": "Aika",
+    "cancel": "Soke",
+    "confirm": "Tabbatar",
+    "back": "Koma baya",
+    "loading": "Ana lodawa...",
+    "error": "Kuskure"
+  },
+  "voice": {
+    "startRecording": "Fara yin rikodin",
+    "stopRecording": "Tsaya rikodin",
+    "listening": "Ina sauraron...",
+    "processing": "Ana aiki akan umarnin ka...",
+    "tryAgain": "Ka misali: Aika cedis 50 zuwa mama.family.eth"
+  },
+  "payment": {
+    "title": "Biya ta Murya",
+    "balance": "Kudin ku",
+    "send": "Aika {amount} {currency} zuwa {recipient}",
+    "insufficientBalance": "Kudin bai isa ba",
+    "success": "An aika kudin!",
+    "failed": "An kasa aika kudin"
+  }
+}

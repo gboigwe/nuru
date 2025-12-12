@@ -1,114 +1,104 @@
-/**
- * useXMTP Hook
- *
- * React hook for XMTP client management
- */
+import { useEffect, useState } from 'react';
+import { useAccount, useSigner } from 'wagmi';
+import { XMTPService } from '../services/messaging/XMTPService';
+import { Client } from '@xmtp/xmtp-js';
 
-import { useEffect, useState } from "react";
-import type { Conversation } from "@xmtp/xmtp-js";
-import { useAccount } from "wagmi";
-import { xmtpClient } from "~~/services/xmtp";
-import { useEthersSigner } from "~~/utils/scaffold-eth/useEthersSigner";
+export const useXMTP = () => {
+  const { address, isConnected } = useAccount();
+  const { data: signer } = useSigner();
+  const [xmtpClient, setXmtpClient] = useState<Client | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isInitialized, setIsInitialized] = useState<boolean>(false);
 
-export interface UseXMTPResult {
-  isInitialized: boolean;
-  isInitializing: boolean;
-  error: Error | null;
-  conversations: Conversation[];
-  refreshConversations: () => Promise<void>;
-  sendMessage: (peerAddress: string, message: string) => Promise<void>;
-  canMessage: (address: string) => Promise<boolean>;
-}
-
-export function useXMTP(): UseXMTPResult {
-  const { isConnected } = useAccount();
-  const signer = useEthersSigner();
-
-  const [isInitialized, setIsInitialized] = useState(false);
-  const [isInitializing, setIsInitializing] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-
-  // Initialize XMTP
   useEffect(() => {
-    const initialize = async () => {
-      if (!isConnected || !signer || isInitialized || isInitializing) {
+    let isMounted = true;
+
+    const initializeXMTP = async () => {
+      if (!isConnected || !signer || !address) {
+        if (isMounted) {
+          setIsInitialized(false);
+          setXmtpClient(null);
+        }
         return;
       }
 
-      setIsInitializing(true);
-      setError(null);
-
       try {
-        await xmtpClient.initialize(signer);
-        setIsInitialized(true);
+        setIsLoading(true);
+        setError(null);
 
-        // Load initial conversations
-        const convs = await xmtpClient.getConversations();
-        setConversations(convs);
+        const xmtpService = XMTPService.getInstance();
+
+        // Check if already initialized
+        const existingClient = xmtpService.getClient();
+        if (existingClient) {
+          if (isMounted) {
+            setXmtpClient(existingClient);
+            setIsInitialized(true);
+            setIsLoading(false);
+          }
+          return;
+        }
+
+        // Initialize new client
+        const client = await xmtpService.initialize(signer);
+        if (isMounted) {
+          setXmtpClient(client);
+          setIsInitialized(true);
+          setIsLoading(false);
+        }
       } catch (err) {
-        const error = err instanceof Error ? err : new Error("Failed to initialize XMTP");
-        setError(error);
-        console.error("XMTP initialization failed:", error);
-      } finally {
-        setIsInitializing(false);
+        console.error('XMTP initialization error:', err);
+        if (isMounted) {
+          setError(err instanceof Error ? err.message : 'Failed to initialize XMTP');
+          setIsLoading(false);
+          setIsInitialized(false);
+        }
       }
     };
 
-    initialize();
-  }, [isConnected, signer, isInitialized, isInitializing]);
+    initializeXMTP();
 
-  // Reset on disconnect
-  useEffect(() => {
-    if (!isConnected && isInitialized) {
-      xmtpClient.disconnect();
-      setIsInitialized(false);
-      setConversations([]);
-    }
-  }, [isConnected, isInitialized]);
+    return () => {
+      isMounted = false;
+    };
+  }, [address, isConnected, signer]);
 
-  // Refresh conversations
-  const refreshConversations = async () => {
-    if (!isInitialized) {
-      return;
-    }
-
+  const disconnectXMTP = async () => {
     try {
-      const convs = await xmtpClient.getConversations();
-      setConversations(convs);
+      const xmtpService = XMTPService.getInstance();
+      await xmtpService.disconnect();
+      if (xmtpClient) {
+        setXmtpClient(null);
+        setIsInitialized(false);
+      }
     } catch (err) {
-      console.error("Failed to refresh conversations:", err);
+      console.error('XMTP disconnection error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to disconnect XMTP');
     }
   };
 
-  // Send message
-  const sendMessage = async (peerAddress: string, message: string) => {
-    if (!isInitialized) {
-      throw new Error("XMTP not initialized");
-    }
-
-    await xmtpClient.sendMessage(peerAddress, message);
-
-    // Refresh conversations to include new one if created
-    await refreshConversations();
-  };
-
-  // Check if address can receive messages
-  const canMessage = async (address: string): Promise<boolean> => {
-    if (!isInitialized) {
+  const canMessage = async (recipientAddress: string): Promise<boolean> => {
+    if (!xmtpClient) {
       return false;
     }
 
-    return await xmtpClient.canMessage(address);
+    try {
+      return await xmtpClient.canMessage(recipientAddress);
+    } catch (err) {
+      console.error('Error checking message capability:', err);
+      return false;
+    }
   };
 
   return {
-    isInitialized,
-    isInitializing,
+    xmtpClient,
+    isLoading,
     error,
-    conversations,
-    refreshConversations,
-    sendMessage,
-    canMessage,
+    isInitialized,
+    isConnected,
+    address,
+    disconnectXMTP,
+    canMessage
   };
-}
+};

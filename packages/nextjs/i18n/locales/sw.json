@@ -1,0 +1,25 @@
+{
+  "common": {
+    "send": "Tuma",
+    "cancel": "Ghairi",
+    "confirm": "Thibitisha",
+    "back": "Rudi",
+    "loading": "Inapakia...",
+    "error": "Kosa"
+  },
+  "voice": {
+    "startRecording": "Anza kurekodi",
+    "stopRecording": "Simamisha kurekodi",
+    "listening": "Inasikiliza...",
+    "processing": "Inafanya amri yako...",
+    "tryAgain": "Jaribu kusema: Tuma cedis 50 kwa mama.family.eth"
+  },
+  "payment": {
+    "title": "Malipo ya sauti",
+    "balance": "Salio lako",
+    "send": "Tuma {amount} {currency} kwa {recipient}",
+    "insufficientBalance": "Salio halitoshi",
+    "success": "Malipo yamefanikiwa!",
+    "failed": "Malipo yameshindikana"
+  }
+}

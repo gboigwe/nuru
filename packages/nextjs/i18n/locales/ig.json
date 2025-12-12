@@ -1,0 +1,25 @@
+{
+  "common": {
+    "send": "Ziga",
+    "cancel": "Kagbuo",
+    "confirm": "Kwee",
+    "back": "Gaa n'azu",
+    "loading": "Na-eme...",
+    "error": "Mmekọrịta"
+  },
+  "voice": {
+    "startRecording": "Malite ịdọta",
+    "stopRecording": "Kagbuo ịdọta",
+    "listening": "Na gụọ...",
+    "processing": "Na-eme ihe gị...",
+    "tryAgain": "Biko kwuo: Ziga cedis 50 n'aka mama.family.eth"
+  },
+  "payment": {
+    "title": "Ihe ọrụ ọrụ",
+    "balance": "Ego gị",
+    "send": "Ziga {amount} {currency} n'aka {recipient}",
+    "insufficientBalance": "Ego adịghị",
+    "success": "Ihe ọrụ ọrụ!",
+    "failed": "Ihe ọrụ ọrụ"
+  }
+}

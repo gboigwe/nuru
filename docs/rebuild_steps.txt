@@ -1,4 +1,4 @@
-# VoicePay Africa: Complete Miniapp Conversion Guide for Claude Code
+# VoicePay Africa: Complete Miniapp Conversion Guide
 
 ## 🎯 MISSION: Convert Existing Scaffold-ETH 2 to Farcaster Miniapp
 
@@ -618,7 +618,7 @@ npx vercel deploy --prod
 
 ---
 
-## 🎯 CLAUDE CODE COMMANDS
+## 🎯 COMMANDS
 
 Execute these commands in sequence to build the miniapp:
 

@@ -1,0 +1,26 @@
+{
+  "common": {
+    "send": "Envoyer",
+    "cancel": "Annuler",
+    "confirm": "Confirmer",
+    "back": "Retour",
+    "loading": "Chargement...",
+    "error": "Erreur"
+  },
+  "voice": {
+    "startRecording": "Démarrer l'enregistrement",
+    "stopRecording": "Arrêter l'enregistrement",
+    "listening": "Écoute...",
+    "processing": "Traitement de votre commande...",
+    "tryAgain": "Essayez de dire : Envoyer 50 cedis à mama.family.eth"
+  },
+  "payment": {
+    "title": "Paiement Vocal",
+    "balance": "Votre Solde",
+    "send": "Envoyer {amount} {currency} à {recipient}",
+    "insufficientBalance": "Solde insuffisant",
+    "success": "Paiement réussi !",
+    "failed": "Paiement échoué",
+    "viewTransaction": "Voir sur Basescan"
+  }
+}
