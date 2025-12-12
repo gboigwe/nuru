@@ -1,6 +1,16 @@
-import { DebugContracts } from "./_components/DebugContracts";
+import dynamic from "next/dynamic";
 import type { NextPage } from "next";
 import { getMetadata } from "~~/utils/scaffold-eth/getMetadata";
+
+// Dynamic import for DebugContracts to reduce initial bundle size
+const DebugContracts = dynamic(() => import("./_components/DebugContracts").then(mod => ({ default: mod.DebugContracts })), {
+  loading: () => (
+    <div className="flex items-center justify-center min-h-[400px]">
+      <span className="loading loading-spinner loading-lg"></span>
+    </div>
+  ),
+  ssr: false,
+});
 
 export const metadata = getMetadata({
   title: "Debug Contracts",

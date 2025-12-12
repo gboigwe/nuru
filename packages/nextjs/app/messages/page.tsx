@@ -6,13 +6,31 @@
  * XMTP messaging interface
  */
 
+import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import type { Conversation } from "@xmtp/xmtp-js";
 import { useAccount } from "wagmi";
-import { ChatInterface } from "~~/components/xmtp/ChatInterface";
-import { ConversationList } from "~~/components/xmtp/ConversationList";
 import { xmtpClient } from "~~/services/xmtp";
 import { useEthersSigner } from "~~/utils/scaffold-eth/useEthersSigner";
+
+// Dynamic imports for XMTP components to reduce initial bundle size
+const ChatInterface = dynamic(() => import("~~/components/xmtp/ChatInterface").then(mod => ({ default: mod.ChatInterface })), {
+  loading: () => (
+    <div className="flex items-center justify-center h-full">
+      <span className="loading loading-spinner loading-lg"></span>
+    </div>
+  ),
+  ssr: false,
+});
+
+const ConversationList = dynamic(() => import("~~/components/xmtp/ConversationList").then(mod => ({ default: mod.ConversationList })), {
+  loading: () => (
+    <div className="flex items-center justify-center h-full">
+      <span className="loading loading-spinner loading-md"></span>
+    </div>
+  ),
+  ssr: false,
+});
 
 export default function MessagesPage() {
   const { address, isConnected } = useAccount();
@@ -48,16 +66,16 @@ export default function MessagesPage() {
       try {
         await xmtpClient.initialize(signer);
         setIsInitialized(true);
-        console.log("✅ XMTP initialized for messages page");
       } catch (error) {
         console.error("Failed to initialize XMTP:", error);
-        alert("Failed to initialize messaging. Please try again.");
       } finally {
         setIsInitializing(false);
       }
     };
 
-    initializeXMTP();
+    if (signer && !isInitialized) {
+      initializeXMTP();
+    }
   }, [signer, isInitialized, isInitializing]);
 
   const handleStartNewConversation = async () => {
@@ -72,194 +90,116 @@ export default function MessagesPage() {
       setShowNewConversation(false);
     } catch (error) {
       console.error("Failed to start conversation:", error);
-      alert("Failed to start conversation. Make sure the address is valid and on XMTP network.");
     }
   };
 
-  // Not connected
-  if (!isConnected) {
+  if (!isConnected || !address) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-          <div className="text-6xl mb-4">🔒</div>
-          <h1 className="text-3xl font-bold mb-4">Connect Your Wallet</h1>
-          <p className="text-base-content/60 mb-6">
-            Connect your wallet to start messaging with XMTP
-          </p>
+        <div className="text-center">
+          <h1 className="text-3xl font-bold mb-4">Messages</h1>
+          <p className="text-base-content/70">Please connect your wallet to access messages</p>
         </div>
       </div>
     );
   }
 
-  // Initializing
   if (isInitializing) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-          <span className="loading loading-spinner loading-lg mb-4"></span>
-          <h2 className="text-2xl font-semibold mb-2">Initializing Messaging</h2>
-          <p className="text-base-content/60">Setting up your XMTP client...</p>
+        <div className="flex items-center justify-center h-96">
+          <div className="text-center">
+            <span className="loading loading-spinner loading-lg mb-4"></span>
+            <p className="text-base-content/70">Initializing XMTP...</p>
+          </div>
         </div>
       </div>
     );
   }
 
-  // Not initialized
   if (!isInitialized) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-          <div className="text-6xl mb-4">❌</div>
-          <h2 className="text-2xl font-semibold mb-2">Failed to Initialize</h2>
-          <p className="text-base-content/60 mb-6">
-            Could not initialize XMTP messaging. Please refresh and try again.
-          </p>
+        <div className="text-center">
+          <h1 className="text-3xl font-bold mb-4">Messages</h1>
+          <p className="text-base-content/70 mb-4">Failed to initialize XMTP client</p>
           <button className="btn btn-primary" onClick={() => window.location.reload()}>
-            Refresh Page
+            Retry
           </button>
         </div>
       </div>
     );
   }
 
-  // Desktop layout
-  if (!isMobile) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex gap-4 h-[calc(100vh-200px)]">
-          {/* Conversations sidebar */}
-          <div className="w-96 border border-base-300 rounded-lg overflow-hidden">
-            <ConversationList
-              onSelectConversation={setSelectedConversation}
-              selectedConversation={selectedConversation || undefined}
+  return (
+    <div className="container mx-auto px-4 py-8 h-[calc(100vh-200px)]">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-3xl font-bold">Messages</h1>
+          <p className="text-base-content/60 text-sm">Secure wallet-to-wallet messaging</p>
+        </div>
+
+        {/* New Conversation Button */}
+        <button className="btn btn-primary btn-sm" onClick={() => setShowNewConversation(!showNewConversation)}>
+          ✉️ New Message
+        </button>
+      </div>
+
+      {/* New Conversation Modal */}
+      {showNewConversation && (
+        <div className="card bg-base-100 shadow-xl mb-4 p-4">
+          <h2 className="text-xl font-bold mb-3">Start New Conversation</h2>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              placeholder="Enter wallet address (0x...)"
+              className="input input-bordered flex-1"
+              value={newConversationAddress}
+              onChange={e => setNewConversationAddress(e.target.value)}
+              onKeyPress={e => e.key === "Enter" && handleStartNewConversation()}
             />
-
-            {/* New conversation button */}
-            <div className="p-4 border-t border-base-300">
-              <button
-                className="btn btn-primary w-full"
-                onClick={() => setShowNewConversation(true)}
-              >
-                + New Message
-              </button>
-            </div>
+            <button className="btn btn-primary" onClick={handleStartNewConversation}>
+              Start
+            </button>
+            <button className="btn btn-ghost" onClick={() => setShowNewConversation(false)}>
+              Cancel
+            </button>
           </div>
+        </div>
+      )}
 
-          {/* Chat area */}
-          <div className="flex-1 border border-base-300 rounded-lg overflow-hidden">
+      {/* Main Chat Interface */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-full">
+        {/* Conversation List */}
+        {(!isMobile || !selectedConversation) && (
+          <div className="md:col-span-1">
+            <ConversationList
+              selectedConversation={selectedConversation}
+              onSelectConversation={setSelectedConversation}
+            />
+          </div>
+        )}
+
+        {/* Chat Interface */}
+        {(!isMobile || selectedConversation) && (
+          <div className="md:col-span-2">
             {selectedConversation ? (
-              <ChatInterface conversation={selectedConversation} />
+              <ChatInterface
+                conversation={selectedConversation}
+                onBack={isMobile ? () => setSelectedConversation(null) : undefined}
+              />
             ) : (
-              <div className="flex flex-col items-center justify-center h-full text-center">
-                <div className="text-6xl mb-4">💬</div>
-                <h2 className="text-2xl font-semibold mb-2">Select a Conversation</h2>
-                <p className="text-base-content/60">Choose a conversation to start messaging</p>
+              <div className="card bg-base-100 shadow-xl h-full flex items-center justify-center">
+                <div className="text-center text-base-content/50">
+                  <p className="text-xl mb-2">💬</p>
+                  <p>Select a conversation to start messaging</p>
+                </div>
               </div>
             )}
           </div>
-        </div>
-
-        {/* New conversation modal */}
-        {showNewConversation && (
-          <div className="modal modal-open">
-            <div className="modal-box">
-              <h3 className="font-bold text-lg mb-4">Start New Conversation</h3>
-
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text">Recipient Address</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="0x..."
-                  className="input input-bordered w-full"
-                  value={newConversationAddress}
-                  onChange={(e) => setNewConversationAddress(e.target.value)}
-                />
-              </div>
-
-              <div className="modal-action">
-                <button className="btn btn-ghost" onClick={() => setShowNewConversation(false)}>
-                  Cancel
-                </button>
-                <button
-                  className="btn btn-primary"
-                  onClick={handleStartNewConversation}
-                  disabled={!newConversationAddress.trim()}
-                >
-                  Start Chat
-                </button>
-              </div>
-            </div>
-            <div className="modal-backdrop" onClick={() => setShowNewConversation(false)} />
-          </div>
         )}
       </div>
-    );
-  }
-
-  // Mobile layout
-  if (selectedConversation) {
-    return (
-      <div className="h-screen">
-        <ChatInterface
-          conversation={selectedConversation}
-          onClose={() => setSelectedConversation(null)}
-        />
-      </div>
-    );
-  }
-
-  return (
-    <div className="h-screen">
-      <ConversationList
-        onSelectConversation={setSelectedConversation}
-        selectedConversation={selectedConversation || undefined}
-      />
-
-      {/* Floating new conversation button */}
-      <button
-        className="btn btn-primary btn-circle fixed bottom-4 right-4 w-16 h-16 shadow-lg"
-        onClick={() => setShowNewConversation(true)}
-      >
-        <span className="text-2xl">+</span>
-      </button>
-
-      {/* New conversation modal */}
-      {showNewConversation && (
-        <div className="modal modal-open">
-          <div className="modal-box">
-            <h3 className="font-bold text-lg mb-4">Start New Conversation</h3>
-
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text">Recipient Address</span>
-              </label>
-              <input
-                type="text"
-                placeholder="0x..."
-                className="input input-bordered w-full"
-                value={newConversationAddress}
-                onChange={(e) => setNewConversationAddress(e.target.value)}
-              />
-            </div>
-
-            <div className="modal-action">
-              <button className="btn btn-ghost" onClick={() => setShowNewConversation(false)}>
-                Cancel
-              </button>
-              <button
-                className="btn btn-primary"
-                onClick={handleStartNewConversation}
-                disabled={!newConversationAddress.trim()}
-              >
-                Start Chat
-              </button>
-            </div>
-          </div>
-          <div className="modal-backdrop" onClick={() => setShowNewConversation(false)} />
-        </div>
-      )}
     </div>
   );
 }
