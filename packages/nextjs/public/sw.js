@@ -4,8 +4,10 @@
  * Implements caching strategies and offline support
  */
 
-const CACHE_VERSION = "v1";
+const CACHE_VERSION = "v2";
 const CACHE_NAME = `nuru-${CACHE_VERSION}`;
+const MAX_CACHE_SIZE = 50; // Maximum number of cached items
+const MAX_CACHE_AGE = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
 
 // Cache strategies for different resource types
 const CACHE_STRATEGIES = {
@@ -21,6 +23,13 @@ const STATIC_RESOURCES = [
   "/manifest.json",
   "/offline.html",
 ];
+
+// Cache size limits for different types
+const CACHE_LIMITS = {
+  images: 30,
+  static: 50,
+  api: 20,
+};
 
 /**
  * Install Event - Cache static resources
@@ -191,7 +200,14 @@ async function cacheFirst(request) {
   const cachedResponse = await caches.match(request);
 
   if (cachedResponse) {
-    return cachedResponse;
+    // Check cache age
+    const cacheTime = cachedResponse.headers.get("sw-cache-time");
+    if (cacheTime && Date.now() - parseInt(cacheTime) > MAX_CACHE_AGE) {
+      // Cache is too old, fetch fresh data
+      caches.delete(request);
+    } else {
+      return cachedResponse;
+    }
   }
 
   try {
@@ -199,7 +215,17 @@ async function cacheFirst(request) {
 
     if (networkResponse.ok) {
       const cache = await caches.open(CACHE_NAME);
-      cache.put(request, networkResponse.clone());
+      const responseWithTime = new Response(networkResponse.body, {
+        status: networkResponse.status,
+        statusText: networkResponse.statusText,
+        headers: new Headers({
+          ...Object.fromEntries(networkResponse.headers.entries()),
+          "sw-cache-time": Date.now().toString(),
+        }),
+      });
+      cache.put(request, responseWithTime.clone());
+      await trimCache(CACHE_NAME, CACHE_LIMITS.images);
+      return responseWithTime;
     }
 
     return networkResponse;
@@ -309,5 +335,21 @@ async function syncOfflineQueue() {
   } catch (error) {
     console.error("Queue sync failed:", error);
     return Promise.reject(error);
+  }
+}
+
+/**
+ * Trim cache to maximum size
+ * Removes oldest entries when cache exceeds limit
+ */
+async function trimCache(cacheName, maxItems) {
+  const cache = await caches.open(cacheName);
+  const keys = await cache.keys();
+
+  if (keys.length > maxItems) {
+    // Remove oldest entries
+    const keysToDelete = keys.slice(0, keys.length - maxItems);
+    await Promise.all(keysToDelete.map((key) => cache.delete(key)));
+    console.log(`🗑️ Trimmed ${keysToDelete.length} items from cache`);
   }
 }
