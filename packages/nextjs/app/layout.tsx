@@ -13,10 +13,9 @@ export const metadata = getMetadata({
 export const viewport = getViewport();
 
 const ScaffoldEthApp = ({ children }: { children: React.ReactNode }) => {
-
   return (
-    <html lang={i18n.language} dir={dir} suppressHydrationWarning>
-      <body className={`${dir === 'rtl' ? 'font-arabic' : 'font-sans'}`}>
+    <html lang="en" suppressHydrationWarning>
+      <body>
         <ThemeProvider enableSystem>
           <ScaffoldEthAppWithProviders>
             {children}
