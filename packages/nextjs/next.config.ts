@@ -15,6 +15,10 @@ const nextConfig: NextConfig = {
   },
   // Fix workspace root detection
   outputFileTracingRoot: require("path").join(__dirname, "../../"),
+  // Production optimizations
+  compress: true,
+  poweredByHeader: false,
+  generateEtags: true,
   // Tree shaking optimization for common packages
   experimental: {
     optimizePackageImports: [
