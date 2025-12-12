@@ -3,3 +3,4 @@
  */
 
 export * from "./ReceiptMetadataService";
+export * from "./ReceiptImageGenerator";
