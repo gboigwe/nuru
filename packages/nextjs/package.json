@@ -36,6 +36,7 @@
     "blo": "^1.2.0",
     "burner-connector": "0.0.18",
     "daisyui": "^5.0.9",
+    "jspdf": "^2.5.2",
     "kubo-rpc-client": "^5.0.2",
     "next": "^15.2.3",
     "next-nprogress-bar": "^2.3.13",
@@ -47,7 +48,6 @@
     "usehooks-ts": "^3.1.0",
     "viem": "^2.37.9",
     "wagmi": "^2.16.4",
-    "xmtp-js": "^11.0.0",
     "zustand": "^5.0.0"
   },
   "devDependencies": {
