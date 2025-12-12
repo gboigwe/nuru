@@ -3,7 +3,10 @@ import { ThemeProvider } from "~~/components/ThemeProvider";
 import { WebVitals } from "~~/components/WebVitals";
 import { OnboardingWrapper } from "~~/components/onboarding/OnboardingWrapper";
 import { PWAProvider } from "~~/components/pwa/PWAProvider";
+import { AccessibilityProvider } from "~~/components/accessibility";
+import { I18nProvider } from "~~/components/i18n";
 import "~~/styles/globals.css";
+import "~~/styles/accessibility.css";
 import { getMetadata, getViewport } from "~~/utils/scaffold-eth/getMetadata";
 
 export const metadata = getMetadata({
@@ -18,12 +21,16 @@ const ScaffoldEthApp = ({ children }: { children: React.ReactNode }) => {
     <html lang="en" suppressHydrationWarning>
       <body>
         <ThemeProvider enableSystem>
-          <ScaffoldEthAppWithProviders>
-            <WebVitals />
-            {children}
-            <OnboardingWrapper />
-            <PWAProvider />
-          </ScaffoldEthAppWithProviders>
+          <I18nProvider>
+            <AccessibilityProvider>
+              <ScaffoldEthAppWithProviders>
+                <WebVitals />
+                {children}
+                <OnboardingWrapper />
+                <PWAProvider />
+              </ScaffoldEthAppWithProviders>
+            </AccessibilityProvider>
+          </I18nProvider>
         </ThemeProvider>
       </body>
     </html>
