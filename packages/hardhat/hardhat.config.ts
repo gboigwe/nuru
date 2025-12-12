@@ -103,12 +103,26 @@ const config: HardhatUserConfig = {
       accounts: [deployerPrivateKey],
     },
     base: {
-      url: "https://mainnet.base.org",
+      url: process.env.BASE_RPC_URL || "https://mainnet.base.org",
       accounts: [deployerPrivateKey],
+      chainId: 8453,
+      verify: {
+        etherscan: {
+          apiUrl: "https://api.basescan.org",
+          apiKey: process.env.BASESCAN_API_KEY || etherscanApiKey,
+        },
+      },
     },
     baseSepolia: {
-      url: "https://sepolia.base.org",
+      url: process.env.BASE_SEPOLIA_RPC_URL || "https://sepolia.base.org",
       accounts: [deployerPrivateKey],
+      chainId: 84532,
+      verify: {
+        etherscan: {
+          apiUrl: "https://api-sepolia.basescan.org",
+          apiKey: process.env.BASESCAN_API_KEY || etherscanApiKey,
+        },
+      },
     },
     scrollSepolia: {
       url: "https://sepolia-rpc.scroll.io",
@@ -129,7 +143,30 @@ const config: HardhatUserConfig = {
   },
   // Configuration for harhdat-verify plugin
   etherscan: {
-    apiKey: `${etherscanApiKey}`,
+    apiKey: {
+      mainnet: etherscanApiKey,
+      sepolia: etherscanApiKey,
+      base: process.env.BASESCAN_API_KEY || etherscanApiKey,
+      baseSepolia: process.env.BASESCAN_API_KEY || etherscanApiKey,
+    },
+    customChains: [
+      {
+        network: "base",
+        chainId: 8453,
+        urls: {
+          apiURL: "https://api.basescan.org/api",
+          browserURL: "https://basescan.org",
+        },
+      },
+      {
+        network: "baseSepolia",
+        chainId: 84532,
+        urls: {
+          apiURL: "https://api-sepolia.basescan.org/api",
+          browserURL: "https://sepolia.basescan.org",
+        },
+      },
+    ],
   },
   // Configuration for etherscan-verify from hardhat-deploy plugin
   verify: {
