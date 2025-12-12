@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "scripts": {
     "build": "next build",
+    "analyze": "ANALYZE=true next build",
     "check-types": "tsc --noEmit --incremental",
     "dev": "next dev",
     "format": "prettier --write . '!(node_modules|.next|contracts)/**/*'",
@@ -51,6 +52,7 @@
     "zustand": "^5.0.0"
   },
   "devDependencies": {
+    "@next/bundle-analyzer": "^16.0.10",
     "@tailwindcss/postcss": "latest",
     "@testing-library/jest-dom": "^6.1.5",
     "@testing-library/react": "^14.1.2",
