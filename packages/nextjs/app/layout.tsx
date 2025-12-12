@@ -1,5 +1,6 @@
 import { ScaffoldEthAppWithProviders } from "~~/components/ScaffoldEthAppWithProviders";
 import { ThemeProvider } from "~~/components/ThemeProvider";
+import { WebVitals } from "~~/components/WebVitals";
 import { OnboardingWrapper } from "~~/components/onboarding/OnboardingWrapper";
 import { PWAProvider } from "~~/components/pwa/PWAProvider";
 import "~~/styles/globals.css";
@@ -13,12 +14,12 @@ export const metadata = getMetadata({
 export const viewport = getViewport();
 
 const ScaffoldEthApp = ({ children }: { children: React.ReactNode }) => {
-
   return (
-    <html lang={i18n.language} dir={dir} suppressHydrationWarning>
-      <body className={`${dir === 'rtl' ? 'font-arabic' : 'font-sans'}`}>
+    <html lang="en" suppressHydrationWarning>
+      <body>
         <ThemeProvider enableSystem>
           <ScaffoldEthAppWithProviders>
+            <WebVitals />
             {children}
             <OnboardingWrapper />
             <PWAProvider />

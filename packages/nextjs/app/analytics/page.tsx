@@ -7,15 +7,18 @@
  * budget tracking, savings comparison, and financial health
  */
 
+import dynamic from "next/dynamic";
 import { useState, useEffect } from "use client";
-import { SpendingOverviewCard } from "~~/components/analytics/SpendingOverviewCard";
-import { BudgetTrackerCard } from "~~/components/analytics/BudgetTrackerCard";
-import { SavingsComparisonCard } from "~~/components/analytics/SavingsComparisonCard";
-import { RecipientAnalyticsCard } from "~~/components/analytics/RecipientAnalyticsCard";
-import { GasUsageCard } from "~~/components/analytics/GasUsageCard";
-import { FinancialHealthCard } from "~~/components/analytics/FinancialHealthCard";
-import { analyticsService } from "~~/services/analytics";
 import type { AnalyticsDashboardData, TimePeriod } from "~~/types/analytics";
+import { analyticsService } from "~~/services/analytics";
+
+// Dynamic imports for analytics components to reduce initial bundle size
+const SpendingOverviewCard = dynamic(() => import("~~/components/analytics/SpendingOverviewCard").then(mod => ({ default: mod.SpendingOverviewCard })), { ssr: false });
+const BudgetTrackerCard = dynamic(() => import("~~/components/analytics/BudgetTrackerCard").then(mod => ({ default: mod.BudgetTrackerCard })), { ssr: false });
+const SavingsComparisonCard = dynamic(() => import("~~/components/analytics/SavingsComparisonCard").then(mod => ({ default: mod.SavingsComparisonCard })), { ssr: false });
+const RecipientAnalyticsCard = dynamic(() => import("~~/components/analytics/RecipientAnalyticsCard").then(mod => ({ default: mod.RecipientAnalyticsCard })), { ssr: false });
+const GasUsageCard = dynamic(() => import("~~/components/analytics/GasUsageCard").then(mod => ({ default: mod.GasUsageCard })), { ssr: false });
+const FinancialHealthCard = dynamic(() => import("~~/components/analytics/FinancialHealthCard").then(mod => ({ default: mod.FinancialHealthCard })), { ssr: false });
 
 export default function AnalyticsPage() {
   const [period, setPeriod] = useState<TimePeriod>("30d");
