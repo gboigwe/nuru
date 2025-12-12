@@ -1,5 +1,6 @@
 import { ScaffoldEthAppWithProviders } from "~~/components/ScaffoldEthAppWithProviders";
 import { ThemeProvider } from "~~/components/ThemeProvider";
+import { WebVitals } from "~~/components/WebVitals";
 import { OnboardingWrapper } from "~~/components/onboarding/OnboardingWrapper";
 import { PWAProvider } from "~~/components/pwa/PWAProvider";
 import "~~/styles/globals.css";
@@ -18,6 +19,7 @@ const ScaffoldEthApp = ({ children }: { children: React.ReactNode }) => {
       <body>
         <ThemeProvider enableSystem>
           <ScaffoldEthAppWithProviders>
+            <WebVitals />
             {children}
             <OnboardingWrapper />
             <PWAProvider />
