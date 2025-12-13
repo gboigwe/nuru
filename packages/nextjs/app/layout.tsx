@@ -6,7 +6,6 @@ import { PWAProvider } from "~~/components/pwa/PWAProvider";
 import { AccessibilityProvider } from "~~/components/accessibility";
 import { I18nProvider } from "~~/components/i18n";
 import "~~/styles/globals.css";
-import "~~/styles/accessibility.css";
 import { getMetadata, getViewport } from "~~/utils/scaffold-eth/getMetadata";
 
 export const metadata = getMetadata({
