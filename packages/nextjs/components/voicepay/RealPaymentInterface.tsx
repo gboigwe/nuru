@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { useAccount } from 'wagmi';
-import { useVoicePay } from '~/hooks/useVoicePay';
+import { useVoicePay } from '~~/hooks/useVoicePay';
 import { VoiceRecorder } from './VoiceRecorder';
 import { RealBalanceDisplay } from './RealBalanceDisplay';
 import { PaymentConfirmationModal } from './PaymentConfirmationModal';

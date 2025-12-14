@@ -8,7 +8,7 @@
  */
 
 import dynamic from "next/dynamic";
-import { useState, useEffect } from "use client";
+import { useState, useEffect } from "react";
 import type { AnalyticsDashboardData, TimePeriod } from "~~/types/analytics";
 import { analyticsService } from "~~/services/analytics";
 

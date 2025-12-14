@@ -1,6 +1,7 @@
+"use client";
+
 import dynamic from "next/dynamic";
 import type { NextPage } from "next";
-import { getMetadata } from "~~/utils/scaffold-eth/getMetadata";
 
 // Dynamic import for DebugContracts to reduce initial bundle size
 const DebugContracts = dynamic(() => import("./_components/DebugContracts").then(mod => ({ default: mod.DebugContracts })), {
@@ -10,11 +11,6 @@ const DebugContracts = dynamic(() => import("./_components/DebugContracts").then
     </div>
   ),
   ssr: false,
-});
-
-export const metadata = getMetadata({
-  title: "Debug Contracts",
-  description: "Debug your deployed 🏗 Scaffold-ETH 2 contracts in an easy way",
 });
 
 const Debug: NextPage = () => {

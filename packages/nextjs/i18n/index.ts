@@ -12,28 +12,51 @@ import ig from './locales/ig.json';
 import sw from './locales/sw.json';
 import ar from './locales/ar.json';
 
-i18n
-  .use(LanguageDetector) // Detect user language
-  .use(initReactI18next) // React integration
-  .init({
-    resources: {
-      en: { translation: en },
-      fr: { translation: fr },
-      tw: { translation: tw },
-      ha: { translation: ha },
-      yo: { translation: yo },
-      ig: { translation: ig },
-      sw: { translation: sw },
-      ar: { translation: ar },
-    },
-    fallbackLng: 'en',
-    interpolation: {
-      escapeValue: false, // React already escapes
-    },
-    detection: {
-      order: ['localStorage', 'navigator', 'htmlTag'],
-      caches: ['localStorage'],
-    },
-  });
+// Only initialize on client side
+if (typeof window !== 'undefined') {
+  i18n
+    .use(LanguageDetector) // Detect user language
+    .use(initReactI18next) // React integration
+    .init({
+      resources: {
+        en: { translation: en },
+        fr: { translation: fr },
+        tw: { translation: tw },
+        ha: { translation: ha },
+        yo: { translation: yo },
+        ig: { translation: ig },
+        sw: { translation: sw },
+        ar: { translation: ar },
+      },
+      fallbackLng: 'en',
+      interpolation: {
+        escapeValue: false, // React already escapes
+      },
+      detection: {
+        order: ['localStorage', 'navigator', 'htmlTag'],
+        caches: ['localStorage'],
+      },
+    });
+} else {
+  // Server-side initialization (minimal)
+  i18n
+    .use(initReactI18next)
+    .init({
+      resources: {
+        en: { translation: en },
+        fr: { translation: fr },
+        tw: { translation: tw },
+        ha: { translation: ha },
+        yo: { translation: yo },
+        ig: { translation: ig },
+        sw: { translation: sw },
+        ar: { translation: ar },
+      },
+      fallbackLng: 'en',
+      interpolation: {
+        escapeValue: false,
+      },
+    });
+}
 
 export default i18n;
