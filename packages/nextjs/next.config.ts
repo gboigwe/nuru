@@ -29,8 +29,17 @@ const nextConfig: NextConfig = {
       "react-hot-toast",
     ],
   },
-  webpack: config => {
+  webpack: (config, { isServer }) => {
+    // Polyfill 'self' for server-side builds
+    if (isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        'self': false,
+      };
+    }
+
     config.resolve.fallback = {
+      ...config.resolve.fallback,
       fs: false,
       net: false,
       tls: false,
